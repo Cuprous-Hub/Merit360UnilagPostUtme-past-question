@@ -14,7 +14,8 @@
                 <div class="card-body" id="practiceContent">
                     <div id="questionsContainer">
                         {% for question in questions %}
-                        <div class="question-card" id="q-{{ question.id }}" style="display: none;">
+                        <div class="question-card" id="q-{{ question.id }}" style="display: none;"
+                             data-explanation="{{ question.explanation or '' }}">
                             <h5 class="mb-3">{{ loop.index }}. {{ question.question_text }}</h5>
                             <div class="options">
                                 {% for option_letter, option_text in [
@@ -24,7 +25,7 @@
                                     ('D', question.option_d)
                                 ] %}
                                 <div class="form-check mb-2">
-                                    <input class="form-check-input option-input" type="radio" 
+                                    <input class="form-check-input option-input" type="radio"
                                         name="option_{{ question.id }}" id="opt_{{ question.id }}_{{ option_letter }}"
                                         value="{{ option_letter }}" data-question-id="{{ question.id }}">
                                     <label class="form-check-label" for="opt_{{ question.id }}_{{ option_letter }}">
@@ -65,7 +66,15 @@
 
 <script>
     const resultId = {{ result.id }};
-    const questions = {{ questions|tojson }};
+
+    // Build questions array from rendered HTML — no tojson needed
+    const questionCards = document.querySelectorAll('.question-card');
+    const questions = Array.from(questionCards).map((card, index) => ({
+        id: parseInt(card.id.replace('q-', '')),
+        index: index,
+        explanation: card.getAttribute('data-explanation') || ''
+    }));
+
     let currentQuestionIndex = 0;
     const answers = {};
 
@@ -73,14 +82,15 @@
         document.querySelectorAll('.question-card').forEach(el => el.style.display = 'none');
         const question = questions[index];
         document.getElementById(`q-${question.id}`).style.display = 'block';
-        
+
         document.getElementById('prevBtn').disabled = index === 0;
         document.getElementById('nextBtn').disabled = index === questions.length - 1;
         document.getElementById('questionNumber').textContent = `Question ${index + 1} of ${questions.length}`;
-        
+
         if (answers[question.id]) {
-            document.getElementById(`opt_${question.id}_${answers[question.id]}`).checked = true;
-            showExplanation(question.id);
+            const radio = document.getElementById(`opt_${question.id}_${answers[question.id]}`);
+            if (radio) radio.checked = true;
+            showExplanation(question.id, null);
         }
     }
 
@@ -91,7 +101,7 @@
             const btnClass = answers[q.id] ? 'btn-success' : 'btn-outline-secondary';
             return `<button class="btn ${btnClass} btn-sm w-100 mb-2" data-index="${i}">${answered} Q${i+1}</button>`;
         }).join('');
-        
+
         document.querySelectorAll('#questionsSummary button').forEach(btn => {
             btn.addEventListener('click', () => {
                 currentQuestionIndex = parseInt(btn.getAttribute('data-index'));
@@ -103,7 +113,7 @@
     function submitAnswer(answer) {
         const question = questions[currentQuestionIndex];
         answers[question.id] = answer;
-        
+
         fetch(`/api/practice-mode/${resultId}/submit-answer`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -118,33 +128,28 @@
                 showExplanation(question.id, data);
             }
         });
-        
+
         updateSummary();
     }
 
     function showExplanation(questionId, data) {
         const question = questions.find(q => q.id === questionId);
-        const cardId = `q-${questionId}`;
-        const card = document.getElementById(cardId);
-        
-        let explanation = card.querySelector('.explanation-div');
-        if (explanation) explanation.remove();
-        
-        const answerSection = card.querySelector('.options');
+        const card = document.getElementById(`q-${questionId}`);
+
+        let existing = card.querySelector('.explanation-div');
+        if (existing) existing.remove();
+
         if (question.explanation) {
+            const status = data
+                ? (data.is_correct
+                    ? '<span class="badge badge-success">✓ Correct!</span>'
+                    : '<span class="badge badge-danger">✗ Incorrect</span>')
+                : '';
+
             const div = document.createElement('div');
             div.className = 'alert alert-info mt-3 explanation-div';
-            
-            const status = data && data.is_correct ? 
-                '<span class="badge badge-success">✓ Correct!</span>' : 
-                '<span class="badge badge-danger">✗ Incorrect</span>';
-            
-            div.innerHTML = `
-                ${status}
-                <br><br>
-                <strong>💡 Explanation:</strong> ${question.explanation}
-            `;
-            answerSection.appendChild(div);
+            div.innerHTML = `${status}${status ? '<br><br>' : ''}<strong>💡 Explanation:</strong> ${question.explanation}`;
+            card.querySelector('.options').appendChild(div);
         }
     }
 

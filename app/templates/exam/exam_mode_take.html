@@ -35,11 +35,6 @@
                                 </div>
                                 {% endfor %}
                             </div>
-                            {% if question.explanation %}
-                            <div class="alert alert-light mt-3">
-                                <small><strong>💡 Explanation:</strong> {{ question.explanation }}</small>
-                            </div>
-                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
@@ -72,28 +67,32 @@
 
 <script>
     const resultId = {{ result.id }};
-    const questions = {{ questions|tojson }};
+
+    // Build questions array from rendered HTML — no tojson needed
+    const questionCards = document.querySelectorAll('.question-card');
+    const questions = Array.from(questionCards).map((card, index) => ({
+        id: parseInt(card.id.replace('q-', '')),
+        index: index
+    }));
+
     let currentQuestionIndex = 0;
     const startTime = new Date();
-    const timeLimit = 30 * 60 * 1000; // 30 minutes
+    const timeLimit = 30 * 60 * 1000;
     const answers = {};
 
     function showQuestion(index) {
-        // Hide all questions
         document.querySelectorAll('.question-card').forEach(el => el.style.display = 'none');
         
-        // Show current question
         const question = questions[index];
         document.getElementById(`q-${question.id}`).style.display = 'block';
         
-        // Update buttons
         document.getElementById('prevBtn').disabled = index === 0;
         document.getElementById('nextBtn').disabled = index === questions.length - 1;
         document.getElementById('questionNumber').textContent = `Question ${index + 1} of ${questions.length}`;
         
-        // Restore previous answer if it exists
         if (answers[question.id]) {
-            document.getElementById(`opt_${question.id}_${answers[question.id]}`).checked = true;
+            const radio = document.getElementById(`opt_${question.id}_${answers[question.id]}`);
+            if (radio) radio.checked = true;
         }
     }
 
@@ -105,7 +104,6 @@
             return `<button class="btn ${btnClass} btn-sm w-100 mb-2" data-index="${i}">${answered} Q${i+1}</button>`;
         }).join('');
         
-        // Add click handlers
         document.querySelectorAll('#questionsSummary button').forEach(btn => {
             btn.addEventListener('click', () => {
                 currentQuestionIndex = parseInt(btn.getAttribute('data-index'));
@@ -163,7 +161,6 @@
         });
     }
 
-    // Event listeners
     document.getElementById('nextBtn').addEventListener('click', () => {
         if (currentQuestionIndex < questions.length - 1) {
             currentQuestionIndex++;
@@ -186,7 +183,6 @@
         });
     });
 
-    // Initialize
     showQuestion(0);
     updateSummary();
     setInterval(updateTimer, 1000);
