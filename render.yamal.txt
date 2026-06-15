@@ -3,7 +3,7 @@ services:
     name: merit360-unilag
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn run:app
+    startCommand: python seed_db.py && gunicorn run:app
     envVars:
       - key: SECRET_KEY
         generateValue: true
