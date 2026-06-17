@@ -1,0 +1,153 @@
+/* ================================================================
+   CORRECTION / RESULT STYLES
+   Add this to your app/static/css/style.css
+   ================================================================ */
+
+/* ── Filter Tabs ── */
+.correction-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.tab-btn {
+    padding: 0.4rem 1.2rem;
+    border: 1px solid #d1d5db;
+    background: white;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+.tab-btn.active,
+.tab-btn:hover {
+    background: #1a73e8;
+    color: white;
+    border-color: #1a73e8;
+}
+
+/* ── Correction Card ── */
+.correction-card {
+    border-radius: 10px;
+    padding: 1.25rem;
+    border-left: 5px solid #d1d5db;
+    background: #f9fafb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.correction-card.correct {
+    border-left-color: #16a34a;
+    background: #f0fdf4;
+}
+.correction-card.incorrect {
+    border-left-color: #dc2626;
+    background: #fef2f2;
+}
+
+/* ── Card Header ── */
+.correction-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+}
+.q-number {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #374151;
+}
+.subject-tag {
+    font-size: 0.75rem;
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 0.15rem 0.6rem;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-left: auto;
+}
+.result-badge {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-weight: 600;
+}
+.result-badge.correct { background: #dcfce7; color: #16a34a; }
+.result-badge.incorrect { background: #fee2e2; color: #dc2626; }
+
+/* ── Question Text ── */
+.correction-question {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #111827;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+/* ── Options List ── */
+.correction-options {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.option-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    font-size: 0.9rem;
+    flex-wrap: wrap;
+}
+.option-item.correct-option {
+    background: #dcfce7;
+    border-color: #16a34a;
+    font-weight: 600;
+}
+.option-item.wrong-option {
+    background: #fee2e2;
+    border-color: #dc2626;
+    text-decoration: line-through;
+    opacity: 0.85;
+}
+.opt-label {
+    font-weight: 700;
+    color: #374151;
+    min-width: 20px;
+}
+.opt-tag {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.1rem 0.5rem;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+.correct-tag { background: #16a34a; color: white; }
+.wrong-tag   { background: #dc2626; color: white; }
+
+/* ── Text Answer Fallback ── */
+.answer-comparison { margin-bottom: 0.75rem; }
+.your-ans, .correct-ans { font-size: 0.9rem; margin: 0.25rem 0; }
+.ans-correct { color: #16a34a; }
+.ans-wrong   { color: #dc2626; }
+
+/* ── Explanation Box ── */
+.correction-explanation {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #374151;
+    line-height: 1.6;
+}
+.explanation-label {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: #b45309;
+}
