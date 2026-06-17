@@ -6,6 +6,7 @@
 <div class="container mt-5">
     <div class="row">
         <div class="col-lg-8 mx-auto">
+
             <!-- Score Summary -->
             <div class="card shadow mb-4">
                 <div class="card-header bg-success text-white">
@@ -13,7 +14,7 @@
                 </div>
                 <div class="card-body">
                     <h5 class="mb-3">Topic: <strong>{{ result.selected_topic.name }}</strong></h5>
-                    
+
                     <div class="row text-center">
                         <div class="col-md-4">
                             <h4 class="text-success">{{ result.total_score }}/{{ answers|length }}</h4>
@@ -30,8 +31,8 @@
                     </div>
 
                     <div class="progress mt-4" style="height: 30px;">
-                        <div class="progress-bar bg-success" 
-                            role="progressbar" style="width: {{ result.percentage }}%;" aria-valuenow="{{ result.percentage }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar bg-success"
+                            role="progressbar" style="width: {{ result.percentage }}%;">
                             {{ result.percentage|round(1) }}%
                         </div>
                     </div>
@@ -39,71 +40,122 @@
                     <div class="alert alert-info mt-4">
                         <strong>💡 Practice Tips:</strong>
                         <ul class="mb-0 mt-2">
-                            <li>Review your incorrect answers</li>
-                            <li>Practice regularly to improve</li>
-                            <li>Try different topics</li>
-                            <li>Take the full exam when you're ready</li>
+                            <li>Review your incorrect answers below</li>
+                            <li>Read each explanation carefully</li>
+                            <li>Try different topics to broaden knowledge</li>
+                            <li>Take the full exam when you're confident</li>
                         </ul>
                     </div>
                 </div>
             </div>
 
-            <!-- Detailed Review -->
+            <!-- Correction Section -->
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">📖 Review Your Answers</h5>
+                    <div>
+                        <span class="badge badge-light text-success mr-2">✓ {{ answers|selectattr('is_correct')|list|length }} Correct</span>
+                        <span class="badge badge-light text-danger">✗ {{ answers|rejectattr('is_correct')|list|length }} Wrong</span>
+                    </div>
                 </div>
                 <div class="card-body">
+
+                    <!-- Filter Tabs -->
+                    <div class="correction-tabs mb-4">
+                        <button class="tab-btn active" onclick="filterQuestions('all', event)">All</button>
+                        <button class="tab-btn" onclick="filterQuestions('incorrect', event)">Wrong Only</button>
+                        <button class="tab-btn" onclick="filterQuestions('correct', event)">Correct Only</button>
+                    </div>
+
+                    <!-- Question Cards -->
                     {% for answer in answers %}
-                    <div class="card mb-2">
-                        <div class="card-body p-3">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-2">Q{{ loop.index }}. {{ answer.question.question_text }}</h6>
-                                    <small class="text-muted">
-                                        <strong>Your Answer:</strong> {{ answer.user_answer }}
-                                        {% if answer.is_correct %}
-                                            <span class="badge badge-success ml-2">✓ Correct</span>
-                                        {% else %}
-                                            <span class="badge badge-warning ml-2">⚠ Incorrect</span>
-                                            <br>
-                                            <strong>Correct Answer:</strong> {{ answer.question.correct_answer }}
-                                        {% endif %}
-                                    </small>
-                                    {% if answer.question.explanation %}
-                                    <div class="alert alert-light mt-2 mb-0">
-                                        <small><strong>💡 Explanation:</strong> {{ answer.question.explanation }}</small>
-                                    </div>
-                                    {% endif %}
-                                </div>
-                                <div class="ml-3 text-center">
-                                    {% if answer.is_correct %}
-                                    <span class="badge badge-success" style="font-size: 1em; padding: 8px 12px;">✓</span>
-                                    {% else %}
-                                    <span class="badge badge-warning" style="font-size: 1em; padding: 8px 12px;">✗</span>
-                                    {% endif %}
-                                </div>
-                            </div>
+                    <div class="correction-card {% if answer.is_correct %}correct{% else %}incorrect{% endif %} mb-3"
+                         data-status="{% if answer.is_correct %}correct{% else %}incorrect{% endif %}">
+
+                        <!-- Header -->
+                        <div class="correction-card-header">
+                            <span class="q-number">Q{{ loop.index }}</span>
+                            {% if answer.is_correct %}
+                                <span class="result-badge correct">✓ Correct</span>
+                            {% else %}
+                                <span class="result-badge incorrect">✗ Incorrect</span>
+                            {% endif %}
                         </div>
+
+                        <!-- Full Question -->
+                        <p class="correction-question">{{ answer.question.question_text }}</p>
+
+                        <!-- Options -->
+                        {% if answer.question.option_a %}
+                        <ul class="correction-options">
+                            {% for opt_key, opt_label in [('option_a', 'A'), ('option_b', 'B'), ('option_c', 'C'), ('option_d', 'D')] %}
+                                {% set opt_val = answer.question[opt_key] if answer.question[opt_key] is defined else '' %}
+                                {% if opt_val %}
+                                <li class="option-item
+                                    {% if opt_label == answer.question.correct_answer %}correct-option{% endif %}
+                                    {% if opt_label == answer.user_answer and not answer.is_correct %}wrong-option{% endif %}">
+                                    <span class="opt-label">{{ opt_label }}.</span> {{ opt_val }}
+                                    {% if opt_label == answer.question.correct_answer %}
+                                        <span class="opt-tag correct-tag">✓ Correct</span>
+                                    {% endif %}
+                                    {% if opt_label == answer.user_answer and not answer.is_correct %}
+                                        <span class="opt-tag wrong-tag">✗ Yours</span>
+                                    {% endif %}
+                                    {% if opt_label == answer.user_answer and answer.is_correct %}
+                                        <span class="opt-tag correct-tag">✓ Yours</span>
+                                    {% endif %}
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div class="answer-comparison">
+                            <p class="your-ans {% if answer.is_correct %}ans-correct{% else %}ans-wrong{% endif %}">
+                                <strong>Your Answer:</strong> {{ answer.user_answer or 'Not answered' }}
+                            </p>
+                            {% if not answer.is_correct %}
+                            <p class="correct-ans">
+                                <strong>Correct Answer:</strong> {{ answer.question.correct_answer }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Explanation -->
+                        {% if answer.question.explanation %}
+                        <div class="correction-explanation">
+                            <p class="explanation-label">💡 Explanation</p>
+                            <p>{{ answer.question.explanation }}</p>
+                        </div>
+                        {% endif %}
+
                     </div>
                     {% endfor %}
+
                 </div>
             </div>
 
             <!-- Action Buttons -->
             <div class="text-center mb-4">
-                <a href="{{ url_for('exam.practice_mode_home') }}" class="btn btn-lg btn-success">
-                    📚 Practice Another Topic
-                </a>
-                <a href="{{ url_for('exam.exam_mode_home') }}" class="btn btn-lg btn-primary">
-                    📋 Take Full Exam
-                </a>
-                <a href="{{ url_for('main.dashboard') }}" class="btn btn-lg btn-secondary">
-                    ← Back to Dashboard
-                </a>
+                <a href="{{ url_for('exam.practice_mode_home') }}" class="btn btn-lg btn-success">📚 Practice Another Topic</a>
+                <a href="{{ url_for('exam.exam_mode_home') }}" class="btn btn-lg btn-primary">📋 Take Full Exam</a>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-lg btn-secondary">← Dashboard</a>
             </div>
+
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+{{ super() }}
+<script>
+function filterQuestions(type, event) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    document.querySelectorAll('.correction-card').forEach(card => {
+        card.style.display = (type === 'all' || card.dataset.status === type) ? 'block' : 'none';
+    });
+}
+</script>
 {% endblock %}
