@@ -2,7 +2,7 @@
 Admin utilities for managing exams and questions
 """
 
-from app import create_app, db
+from app import create_app
 from app.models import Exam, Question, User, Result
 from datetime import datetime
 
