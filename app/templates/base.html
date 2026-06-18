@@ -67,7 +67,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('/static/sw.js')
                     .then(reg => console.log('[Merit CBT] Service Worker registered:', reg.scope))
                     .catch(err => console.error('[Merit CBT] Service Worker error:', err));
             });
