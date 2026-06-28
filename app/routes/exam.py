@@ -1,10 +1,10 @@
-from unittest import result
+
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from app import db
-from app.models.exam import Exam, Question, Result, Answer, Topic
+from app.models.exam import Exam, Question, Result, Answer, Topic, TournamentEntry
 from app.models.user import User
 from sqlalchemy import desc, func
 import random
