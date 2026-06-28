@@ -8,7 +8,8 @@
         <div class="col-lg-9">
             <div class="card shadow">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">📋 Full Exam Mode — Q{{ result.answers|length + 1 }} of 40 | Max Score: 30</h5>
+                    <h5 class="mb-0">📋 Full Exam Mode - Question {{ result.answers|length + 1 }} of 40</h5>
+                    <h5 class="mb-0">📋 Full Exam Mode - Question {{ result.answers|length + 1 }} of 30</h5>
                     <div class="timer text-center" id="timer" style="font-size: 1.2em; font-weight: bold;">
                         <span id="timeLeft">30:00</span>
                     </div>
@@ -82,14 +83,15 @@
 
     function showQuestion(index) {
         document.querySelectorAll('.question-card').forEach(el => el.style.display = 'none');
-        
+
         const question = questions[index];
         document.getElementById(`q-${question.id}`).style.display = 'block';
-        
+
         document.getElementById('prevBtn').disabled = index === 0;
         document.getElementById('nextBtn').disabled = index === questions.length - 1;
-        document.getElementById('questionNumber').textContent = `Q${index + 1} of 40`;
-        
+        document.getElementById('questionNumber').textContent = `Question ${index + 1} of ${questions.length}`;
+        document.getElementById('questionNumber').textContent = `Question ${index + 1} of 30`;
+
         if (answers[question.id]) {
             const radio = document.getElementById(`opt_${question.id}_${answers[question.id]}`);
             if (radio) radio.checked = true;
@@ -103,7 +105,7 @@
             const btnClass = answers[q.id] ? 'btn-success' : 'btn-outline-secondary';
             return `<button class="btn ${btnClass} btn-sm w-100 mb-2" data-index="${i}">${answered} Q${i+1}</button>`;
         }).join('');
-        
+
         document.querySelectorAll('#questionsSummary button').forEach(btn => {
             btn.addEventListener('click', () => {
                 currentQuestionIndex = parseInt(btn.getAttribute('data-index'));
@@ -115,7 +117,7 @@
     function submitAnswer(answer) {
         const question = questions[currentQuestionIndex];
         answers[question.id] = answer;
-        
+
         fetch(`/api/exam-mode/${resultId}/submit-answer`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -124,24 +126,24 @@
                 answer: answer
             })
         }).catch(error => console.error('Error:', error));
-        
+
         updateSummary();
     }
 
     function updateTimer() {
         const elapsed = new Date() - startTime;
         const remaining = timeLimit - elapsed;
-        
+
         if (remaining <= 0) {
             finishExam();
             return;
         }
-        
+
         const minutes = Math.floor(remaining / 60000);
         const seconds = Math.floor((remaining % 60000) / 1000);
         document.getElementById('timeLeft').textContent = 
             `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
+
         if (remaining < 60000) {
             document.getElementById('timer').classList.add('text-danger');
         }
@@ -149,7 +151,7 @@
 
     function finishExam() {
         if (!confirm('Are you sure you want to finish the exam?')) return;
-        
+
         fetch(`/api/exam-mode/${resultId}/finish`, {
             method: 'POST'
         })
@@ -195,4 +197,5 @@
     .form-check-label { cursor: pointer; margin-left: 10px; }
     #timer { background-color: rgba(0,0,0,0.1); padding: 10px; border-radius: 5px; }
 </style>
+{% endblock %}
 {% endblock %}
