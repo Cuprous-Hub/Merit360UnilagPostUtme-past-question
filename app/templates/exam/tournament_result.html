@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Tournament Result - UNILAG CBT{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+
+            <!-- Rank Banner -->
+            <div class="rank-banner text-center mb-4">
+                <div class="rank-medal">
+                    {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% else %}🏅{% endif %}
+                </div>
+                <h2>You ranked <strong>#{{ rank }}</strong> out of {{ total_participants }} participants</h2>
+                <p class="text-muted">This weekend's tournament</p>
+            </div>
+
+            <!-- Score Summary -->
+            <div class="card shadow mb-4">
+                <div class="card-header {% if result.is_passed %}bg-success{% else %}bg-danger{% endif %} text-white">
+                    <h3 class="mb-0">
+                        {% if result.is_passed %}✅ PASSED{% else %}❌ NOT PASSED{% endif %}
+                        &nbsp;— Tournament Mode
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h4 class="text-primary">{{ result.total_score }}/30</h4>
+                            <p class="text-muted">Score</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-info">{{ result.percentage|round(1) }}%</h4>
+                            <p class="text-muted">Percentage</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-warning">{{ (result.time_taken_seconds / 60)|int }}m {{ result.time_taken_seconds % 60 }}s</h4>
+                            <p class="text-muted">Time Taken</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-success">#{{ rank }}</h4>
+                            <p class="text-muted">Your Rank</p>
+                        </div>
+                    </div>
+                    <div class="progress mt-4" style="height: 30px;">
+                        <div class="progress-bar {% if result.is_passed %}bg-success{% else %}bg-danger{% endif %}"
+                            role="progressbar" style="width: {{ result.percentage }}%;">
+                            {{ result.percentage|round(1) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Correction Section -->
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📖 Question Review</h5>
+                    <div>
+                        <span class="badge badge-light text-success mr-2">✓ {{ answers|selectattr('is_correct')|list|length }} Correct</span>
+                        <span class="badge badge-light text-danger">✗ {{ answers|rejectattr('is_correct')|list|length }} Wrong</span>
+                    </div>
+                </div>
+                <div class="card-body">
+
+                    <div class="correction-tabs mb-4">
+                        <button class="tab-btn active" onclick="filterQuestions('all', event)">All</button>
+                        <button class="tab-btn" onclick="filterQuestions('incorrect', event)">Wrong Only</button>
+                        <button class="tab-btn" onclick="filterQuestions('correct', event)">Correct Only</button>
+                    </div>
+
+                    {% for answer in answers %}
+                    <div class="correction-card {% if answer.is_correct %}correct{% else %}incorrect{% endif %} mb-3"
+                         data-status="{% if answer.is_correct %}correct{% else %}incorrect{% endif %}">
+
+                        <div class="correction-card-header">
+                            <span class="q-number">Q{{ loop.index }}</span>
+                            {% if answer.is_correct %}
+                                <span class="result-badge correct">✓ Correct</span>
+                            {% else %}
+                                <span class="result-badge incorrect">✗ Incorrect</span>
+                            {% endif %}
+                            {% if answer.question.subject %}
+                                <span class="subject-tag">{{ answer.question.subject }}</span>
+                            {% endif %}
+                        </div>
+
+                        <p class="correction-question">{{ answer.question.question_text }}</p>
+
+                        {% if answer.question.option_a %}
+                        <ul class="correction-options">
+                            {% for opt_key, opt_label in [('option_a', 'A'), ('option_b', 'B'), ('option_c', 'C'), ('option_d', 'D')] %}
+                                {% set opt_val = answer.question[opt_key] if answer.question[opt_key] is defined else '' %}
+                                {% if opt_val %}
+                                <li class="option-item
+                                    {% if opt_label == answer.question.correct_answer %}correct-option{% endif %}
+                                    {% if opt_label == answer.user_answer and not answer.is_correct %}wrong-option{% endif %}">
+                                    <span class="opt-label">{{ opt_label }}.</span> {{ opt_val }}
+                                    {% if opt_label == answer.question.correct_answer %}
+                                        <span class="opt-tag correct-tag">✓ Correct</span>
+                                    {% endif %}
+                                    {% if opt_label == answer.user_answer and not answer.is_correct %}
+                                        <span class="opt-tag wrong-tag">✗ Yours</span>
+                                    {% endif %}
+                                    {% if opt_label == answer.user_answer and answer.is_correct %}
+                                        <span class="opt-tag correct-tag">✓ Yours</span>
+                                    {% endif %}
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <div class="answer-comparison">
+                            <p class="your-ans {% if answer.is_correct %}ans-correct{% else %}ans-wrong{% endif %}">
+                                <strong>Your Answer:</strong> {{ answer.user_answer or 'Not answered' }}
+                            </p>
+                            {% if not answer.is_correct %}
+                            <p class="correct-ans">
+                                <strong>Correct Answer:</strong> {{ answer.question.correct_answer }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if answer.question.explanation %}
+                        <div class="correction-explanation">
+                            <p class="explanation-label">💡 Explanation</p>
+                            <p>{{ answer.question.explanation }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="text-center mb-4">
+                <a href="{{ url_for('exam.tournament_home') }}" class="btn btn-lg btn-warning">🏆 Tournament Home</a>
+                <a href="{{ url_for('exam.leaderboard') }}" class="btn btn-lg btn-info">📊 Leaderboard</a>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-lg btn-secondary">← Dashboard</a>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() }}
+<script>
+function filterQuestions(type, event) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    document.querySelectorAll('.correction-card').forEach(card => {
+        card.style.display = (type === 'all' || card.dataset.status === type) ? 'block' : 'none';
+    });
+}
+</script>
+<style>
+.rank-banner { padding: 1.5rem; background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 14px; color: white; margin-bottom: 1.5rem; }
+.rank-medal { font-size: 3rem; margin-bottom: 0.5rem; }
+.rank-banner h2 { font-size: 1.4rem; margin: 0; }
+.rank-banner p { opacity: 0.75; margin: 0.25rem 0 0; }
+</style>
+{% include 'partials/correction_styles.html' ignore missing %}
+{% endblock %}
