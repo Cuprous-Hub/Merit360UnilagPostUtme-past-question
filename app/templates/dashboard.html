@@ -1,163 +1,198 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - UNILAG CBT{% endblock %}
+{% block title %}Tournament - UNILAG CBT{% endblock %}
 
 {% block content %}
-<div class="dashboard">
-    <div class="dashboard-header">
-        <h1>Welcome, {{ current_user.full_name or current_user.username }}!</h1>
-        <p>Your CBT Practice Dashboard</p>
-    </div>
-
-    <div class="statistics">
-        <div class="stat-card">
-            <h3>{{ total_tests }}</h3>
-            <p>Tests Taken</p>
-        </div>
-        <div class="stat-card">
-            <h3>{{ passed_tests }}</h3>
-            <p>Tests Passed</p>
-        </div>
-        <div class="stat-card">
-            <h3>{{ "%.1f"|format(avg_score) }}%</h3>
-            <p>Average Score</p>
-        </div>
-        <div class="stat-card">
-            <h3>{{ exams|length }}</h3>
-            <p>Available Exams</p>
-        </div>
-    </div>
-
-    <!-- NEW FEATURES SECTION -->
-    <h2 style="margin-top: 40px;">🎯 New Features</h2>
-    <div class="exams-grid" style="margin-bottom: 30px;">
-        <!-- Exam Mode -->
-        <div class="exam-card" style="border-left: 4px solid #dc3545;">
-            <div class="exam-header">
-                <h3>📋 Full Exam Mode</h3>
-                <span class="subject-badge" style="background-color: #dc3545;">GRADED</span>
-            </div>
-            <p class="exam-description">Take a realistic 30-question exam with a 30-minute time limit. Test your knowledge and compete on the leaderboard!</p>
-            <div class="exam-details">
-                <span>⏱️ 30 minutes</span>
-                <span>❓ 30 questions</span>
-                <span>📊 Graded</span>
-            </div>
-            <div class="exam-actions">
-                <a href="{{ url_for('exam.exam_mode_home') }}" class="btn btn-danger">Start Exam</a>
-            </div>
-        </div>
-
-        <!-- Practice Mode -->
-        <div class="exam-card" style="border-left: 4px solid #28a745;">
-            <div class="exam-header">
-                <h3>📚 Practice Mode</h3>
-                <span class="subject-badge" style="background-color: #28a745;">NO TIME LIMIT</span>
-            </div>
-            <p class="exam-description">Learn topic by topic! Practice specific subjects without time pressure. Perfect for targeted studying and improvement.</p>
-            <div class="exam-details">
-                <span>⏱️ Unlimited time</span>
-                <span>📌 Topic-based</span>
-                <span>💡 Learning-focused</span>
-            </div>
-            <div class="exam-actions">
-                <a href="{{ url_for('exam.practice_mode_home') }}" class="btn btn-success">Start Practicing</a>
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-lg-9">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">🏆 Tournament — Q{{ result.answers|length + 1 }} of 40 | Max Score: 30</h5>
+                    <div class="timer text-center" id="timer" style="font-size: 1.2em; font-weight: bold;">
+                        <span id="timeLeft">30:00</span>
+                    </div>
+                </div>
+                <div class="card-body" id="examContent">
+                    <div id="questionsContainer">
+                        {% for question in questions %}
+                        <div class="question-card" id="q-{{ question.id }}" style="display: none;">
+                            <h5 class="mb-3">{{ loop.index }}. {{ question.question_text }}</h5>
+                            <div class="options">
+                                {% for option_letter, option_text in [
+                                    ('A', question.option_a),
+                                    ('B', question.option_b),
+                                    ('C', question.option_c),
+                                    ('D', question.option_d)
+                                ] %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input option-input" type="radio" 
+                                        name="option_{{ question.id }}" id="opt_{{ question.id }}_{{ option_letter }}"
+                                        value="{{ option_letter }}" data-question-id="{{ question.id }}">
+                                    <label class="form-check-label" for="opt_{{ question.id }}_{{ option_letter }}">
+                                        <strong>{{ option_letter }}.</strong> {{ option_text }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-secondary" id="prevBtn" disabled>← Previous</button>
+                        <span id="questionNumber">Question 1 of 30</span>
+                        <button class="btn btn-secondary" id="nextBtn">Next →</button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Leaderboard -->
-        <div class="exam-card" style="border-left: 4px solid #ffc107;">
-            <div class="exam-header">
-                <h3>🏆 Leaderboard</h3>
-                <span class="subject-badge" style="background-color: #ffc107; color: #000;">TOP 50</span>
-            </div>
-            <p class="exam-description">See how you rank against other users. Check the top performers and get inspired to improve your scores!</p>
-            <div class="exam-details">
-                <span>👥 Global rankings</span>
-                <span>📈 Performance stats</span>
-                <span>🎖️ Achievements</span>
-            </div>
-            <div class="exam-actions">
-                <a href="{{ url_for('exam.leaderboard') }}" class="btn btn-warning">View Rankings</a>
-            </div>
-        </div>
-        <!-- Tournament Mode -->
-        <div class="exam-card" style="border-left: 4px solid #6f42c1;">
-            <div class="exam-header">
-                <h3>🏆 Tournament Mode</h3>
-                <span class="subject-badge" style="background-color: #6f42c1;">WEEKENDS ONLY</span>
-            </div>
-            <p class="exam-description">Compete against other students every Saturday & Sunday! Pay ₦500, get your access code, and battle for the top spot on the weekly leaderboard.</p>
-            <div class="exam-details">
-                <span>💳 ₦500 entry</span>
-                <span>❓ 30 questions</span>
-                <span>🏅 Ranked</span>
-            </div>
-            <div class="exam-actions">
-                <a href="{{ url_for('exam.tournament_home') }}" class="btn" style="background:#6f42c1;color:white;">Enter Tournament</a>
+        <div class="col-lg-3">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Questions Summary</h5>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    <div id="questionsSummary"></div>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-danger w-100" id="finishBtn">🏁 Finish Exam</button>
+                </div>
             </div>
         </div>
     </div>
-
-    <h2>Available Exams</h2>
-    <div class="exams-grid">
-        {% for exam in exams %}
-        <div class="exam-card">
-            <div class="exam-header">
-                <h3>{{ exam.title }}</h3>
-                <span class="subject-badge">{{ exam.subject }}</span>
-            </div>
-            <p class="exam-description">{{ exam.description }}</p>
-            <div class="exam-details">
-                <span>⏱️ {{ exam.duration_minutes }} mins</span>
-                <span>❓ {{ exam.total_questions }} questions</span>
-            </div>
-            <div class="exam-actions">
-                <a href="{{ url_for('exam.view_exam', exam_id=exam.id) }}" class="btn btn-secondary">View Details</a>
-                <a href="{{ url_for('exam.start_exam', exam_id=exam.id) }}" class="btn btn-primary">Start Exam</a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-
-    <h2>Recent Results</h2>
-    {% if user_results %}
-    <div class="results-table">
-        <table>
-            <thead>
-                <tr>
-                    <th>Exam</th>
-                    <th>Date</th>
-                    <th>Score</th>
-                    <th>Percentage</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for result in user_results[-5:] %}
-                <tr>
-                    <td>{{ result.exam.title }}</td>
-                    <td>{{ result.completed_at.strftime('%d/%m/%Y') if result.completed_at else 'In Progress' }}</td>
-                    <td>{{ result.total_score }}/{{ result.total_marks }}</td>
-                    <td>
-                        <span class="percentage">{{ "%.1f"|format(result.percentage) }}%</span>
-                    </td>
-                    <td>
-                        <span class="status {% if result.is_passed %}passed{% else %}failed{% endif %}">
-                            {% if result.is_passed %}Passed{% else %}Failed{% endif %}
-                        </span>
-                    </td>
-                    <td>
-                        <a href="{{ url_for('exam.view_result', exam_id=result.exam_id, result_id=result.id) }}" class="btn-small">View</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p class="no-results">No exam results yet. Start practicing to see your results here!</p>
-    {% endif %}
 </div>
+
+<script>
+    const resultId = {{ result.id }};
+
+    // Build questions array from rendered HTML — no tojson needed
+    const questionCards = document.querySelectorAll('.question-card');
+    const questions = Array.from(questionCards).map((card, index) => ({
+        id: parseInt(card.id.replace('q-', '')),
+        index: index
+    }));
+
+    let currentQuestionIndex = 0;
+    const startTime = new Date();
+    const timeLimit = 30 * 60 * 1000;
+    const answers = {};
+
+    function showQuestion(index) {
+        document.querySelectorAll('.question-card').forEach(el => el.style.display = 'none');
+        
+        const question = questions[index];
+        document.getElementById(`q-${question.id}`).style.display = 'block';
+        
+        document.getElementById('prevBtn').disabled = index === 0;
+        document.getElementById('nextBtn').disabled = index === questions.length - 1;
+        document.getElementById('questionNumber').textContent = `Q${index + 1} of 40`;
+        
+        if (answers[question.id]) {
+            const radio = document.getElementById(`opt_${question.id}_${answers[question.id]}`);
+            if (radio) radio.checked = true;
+        }
+    }
+
+    function updateSummary() {
+        const summary = document.getElementById('questionsSummary');
+        summary.innerHTML = questions.map((q, i) => {
+            const answered = answers[q.id] ? '✓' : '○';
+            const btnClass = answers[q.id] ? 'btn-success' : 'btn-outline-secondary';
+            return `<button class="btn ${btnClass} btn-sm w-100 mb-2" data-index="${i}">${answered} Q${i+1}</button>`;
+        }).join('');
+        
+        document.querySelectorAll('#questionsSummary button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentQuestionIndex = parseInt(btn.getAttribute('data-index'));
+                showQuestion(currentQuestionIndex);
+            });
+        });
+    }
+
+    function submitAnswer(answer) {
+        const question = questions[currentQuestionIndex];
+        answers[question.id] = answer;
+        
+        fetch(`/api/tournament/${resultId}/submit-answer`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                question_id: question.id,
+                answer: answer
+            })
+        }).catch(error => console.error('Error:', error));
+        
+        updateSummary();
+    }
+
+    function updateTimer() {
+        const elapsed = new Date() - startTime;
+        const remaining = timeLimit - elapsed;
+        
+        if (remaining <= 0) {
+            finishExam();
+            return;
+        }
+        
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        document.getElementById('timeLeft').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (remaining < 60000) {
+            document.getElementById('timer').classList.add('text-danger');
+        }
+    }
+
+    function finishExam() {
+        if (!confirm('Are you sure you want to finish the exam?')) return;
+        
+        fetch(`/api/tournament/${resultId}/finish`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = data.redirect;
+            }
+        });
+    }
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+        if (currentQuestionIndex < questions.length - 1) {
+            currentQuestionIndex++;
+            showQuestion(currentQuestionIndex);
+        }
+    });
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+        if (currentQuestionIndex > 0) {
+            currentQuestionIndex--;
+            showQuestion(currentQuestionIndex);
+        }
+    });
+
+    document.getElementById('finishBtn').addEventListener('click', finishExam);
+
+    document.querySelectorAll('.option-input').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            submitAnswer(e.target.value);
+        });
+    });
+
+    showQuestion(0);
+    updateSummary();
+    setInterval(updateTimer, 1000);
+    updateTimer();
+</script>
+
+<style>
+    .question-card { padding: 20px; }
+    .options { margin: 20px 0; }
+    .form-check-label { cursor: pointer; margin-left: 10px; }
+    #timer { background-color: rgba(0,0,0,0.1); padding: 10px; border-radius: 5px; }
+</style>
 {% endblock %}
