@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+% extends "base.html" %}
 {% block title %}Tournament Mode - Merit360{% endblock %}
 
 {% block content %}
@@ -21,19 +21,11 @@
     {% if open_today %}
 
         <!-- Code Entry Section -->
-        {% if user_result and user_result.is_graded %}
-        <div class="card" style="text-align:center; border:2px solid #dc2626;">
-            <div style="font-size:2rem;">🔒</div>
-            <h2>Already Played This Weekend</h2>
-            <p>You've already completed this weekend's tournament. Come back next Saturday!</p>
-            <a href="{{ url_for('exam.tournament_result', result_id=user_result.id) }}" class="btn btn-primary">View My Result</a>
-        </div>
-
-        {% elif not existing_entry %}
+        {% if not existing_entry %}
         <div class="card payment-card">
             <h2>💳 How to Join</h2>
             <ol class="steps-list">
-                <li>Transfer <strong>₦300</strong> to the account below</li>
+                <li>Transfer <strong>₦500</strong> to the account below</li>
                 <li>Send your payment receipt to the admin via WhatsApp or email</li>
                 <li>Receive your unique <strong>8-character access code</strong></li>
                 <li>Enter the code below to start your tournament</li>
@@ -89,7 +81,7 @@
                 <li>30 questions — English (15), Mathematics (12), General Paper (3)</li>
                 <li>Time limit: <strong>30 minutes</strong></li>
                 <li>Each correct answer = 1 mark (max score: 30)</li>
-                <li>One attempt per access code — <strong>you cannot retake once started</strong></li>
+                <li>One attempt per access code</li>
                 <li>Leaderboard is reset every weekend</li>
                 <li>Top performers will be announced on our platforms</li>
             </ul>
@@ -135,7 +127,7 @@
             <div class="closed-icon">📅</div>
             <h2>Tournament Opens This Weekend</h2>
             <p>Merit360 Tournament runs every <strong>Saturday and Sunday</strong>.</p>
-            <p>Come back this weekend, pay ₦300, and compete for the top spot!</p>
+            <p>Come back this weekend, pay ₦500, and compete for the top spot!</p>
             <div class="bank-details">
                 <div class="bank-row">
                     <span class="bank-label">Bank</span>
