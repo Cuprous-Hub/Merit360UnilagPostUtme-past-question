@@ -266,6 +266,14 @@ def practice_mode_subjects():
         'topics': [{'id': t.id, 'name': t.name, 'description': t.description} for t in topics]
     })
 
+@exam_bp.route('/seed-now')
+def seed_now():
+    from app.models.exam import Question
+    if Question.query.count() == 0:
+        from seed_db import seed_database
+        seed_database()
+        return "Seeded!"
+    return f"Already has {Question.query.count()} questions."
 
 @exam_bp.route('/practice-mode/start/<int:topic_id>', methods=['POST'])
 @login_required
