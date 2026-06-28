@@ -1365,17 +1365,13 @@ def seed_mathematics():
     db.session.commit()
     print(f"✅ Seeded {len(unique_math)} Mathematics questions.")
 def seed_database():
-    app = create_app()
-    with app.app_context():
-        print("Starting database seeding...")
-        seed_english()
-        seed_general_paper()
-        seed_mathematics()
-        print("\n✅ All done! Database seeded successfully.")
-        print("English: 400 questions")
-        print("General Paper: 400 questions")
-        print("Mathematics: 400 questions (deduplicated)")
-
+    print("Starting database seeding...")
+    seed_english()
+    seed_general_paper()
+    seed_mathematics()
+    print("\n✅ All done! Database seeded successfully.")
 
 if __name__ == '__main__':
-    seed_database()
+    app = create_app()
+    with app.app_context():
+        seed_database()
