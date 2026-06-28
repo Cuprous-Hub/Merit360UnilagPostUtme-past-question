@@ -1,6 +1,129 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - UNILAG CBT{% endblock %}
+{% block title %}Dashboard - UNILAG CBT
+    <!-- Floating Calculator -->
+    <button class="calc-fab" onclick="toggleCalc()" title="Calculator">🧮</button>
+
+    <div class="calc-modal" id="calcModal">
+        <div class="calc-header">
+            <span>Calculator</span>
+            <button onclick="toggleCalc()" class="calc-close">✕</button>
+        </div>
+        <div class="calc-screen" id="calcScreen">0</div>
+        <div class="calc-grid">
+            <button class="calc-btn span2" onclick="calcClear()">AC</button>
+            <button class="calc-btn" onclick="calcDel()">⌫</button>
+            <button class="calc-btn op" onclick="calcInput('/')">÷</button>
+            <button class="calc-btn" onclick="calcInput('7')">7</button>
+            <button class="calc-btn" onclick="calcInput('8')">8</button>
+            <button class="calc-btn" onclick="calcInput('9')">9</button>
+            <button class="calc-btn op" onclick="calcInput('*')">×</button>
+            <button class="calc-btn" onclick="calcInput('4')">4</button>
+            <button class="calc-btn" onclick="calcInput('5')">5</button>
+            <button class="calc-btn" onclick="calcInput('6')">6</button>
+            <button class="calc-btn op" onclick="calcInput('-')">−</button>
+            <button class="calc-btn" onclick="calcInput('1')">1</button>
+            <button class="calc-btn" onclick="calcInput('2')">2</button>
+            <button class="calc-btn" onclick="calcInput('3')">3</button>
+            <button class="calc-btn op" onclick="calcInput('+')">+</button>
+            <button class="calc-btn span2" onclick="calcInput('0')">0</button>
+            <button class="calc-btn" onclick="calcInput('.')">.</button>
+            <button class="calc-btn eq" onclick="calcEquals()">=</button>
+        </div>
+    </div>
+
+<style>
+/* WhatsApp Banner */
+.whatsapp-banner {
+    display: flex; align-items: center; gap: 1rem;
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: white; border-radius: 12px; padding: 1rem 1.25rem;
+    text-decoration: none; margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(37,211,102,0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.whatsapp-banner:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(37,211,102,0.45); }
+.wa-icon { font-size: 2rem; }
+.wa-text { flex: 1; display: flex; flex-direction: column; }
+.wa-text strong { font-size: 1rem; }
+.wa-text span { font-size: 0.8rem; opacity: 0.9; }
+.wa-arrow { font-size: 1.4rem; font-weight: 700; }
+
+/* Floating Calculator Button */
+.calc-fab {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #1a73e8; color: white; border: none;
+    font-size: 1.5rem; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(26,115,232,0.5);
+    transition: transform 0.2s;
+}
+.calc-fab:hover { transform: scale(1.1); }
+
+/* Calculator Modal */
+.calc-modal {
+    display: none; position: fixed; bottom: 5.5rem; right: 2rem; z-index: 1000;
+    background: #1e1e2e; border-radius: 16px; width: 280px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4); overflow: hidden;
+}
+.calc-modal.open { display: block; }
+.calc-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.75rem 1rem; background: #12122a; color: white; font-weight: 700;
+}
+.calc-close { background: none; border: none; color: white; font-size: 1rem; cursor: pointer; }
+.calc-screen {
+    background: #12122a; color: #00e5ff; font-size: 2rem; font-weight: 700;
+    text-align: right; padding: 0.75rem 1rem; min-height: 60px;
+    word-break: break-all; border-bottom: 1px solid #2a2a4a;
+}
+.calc-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: #2a2a4a;
+}
+.calc-btn {
+    background: #2a2a4a; color: white; border: none;
+    padding: 1rem; font-size: 1.1rem; cursor: pointer;
+    transition: background 0.15s;
+}
+.calc-btn:hover { background: #3a3a5a; }
+.calc-btn.op { background: #1a3a5a; color: #60a5fa; }
+.calc-btn.eq { background: #1a73e8; color: white; font-weight: 700; }
+.calc-btn.span2 { grid-column: span 2; }
+</style>
+
+<script>
+let calcExpr = '';
+function toggleCalc() {
+    document.getElementById('calcModal').classList.toggle('open');
+}
+function calcInput(val) {
+    if (calcExpr === '0') calcExpr = '';
+    calcExpr += val;
+    document.getElementById('calcScreen').textContent = calcExpr;
+}
+function calcClear() {
+    calcExpr = '0';
+    document.getElementById('calcScreen').textContent = '0';
+}
+function calcDel() {
+    calcExpr = calcExpr.slice(0, -1) || '0';
+    document.getElementById('calcScreen').textContent = calcExpr;
+}
+function calcEquals() {
+    try {
+        let result = Function('"use strict"; return (' + calcExpr + ')')();
+        result = parseFloat(result.toFixed(10));
+        calcExpr = String(result);
+        document.getElementById('calcScreen').textContent = calcExpr;
+    } catch(e) {
+        document.getElementById('calcScreen').textContent = 'Error';
+        calcExpr = '';
+    }
+}
+</script>
+
+{% endblock %}
 
 {% block content %}
 <div class="dashboard">
@@ -8,6 +131,28 @@
         <h1>Welcome, {{ current_user.full_name or current_user.username }}!</h1>
         <p>Your CBT Practice Dashboard</p>
     </div>
+
+
+    <!-- WhatsApp Group Banner -->
+    <a href="https://chat.whatsapp.com/KF79kMW3pHI2ypZXzukC85" target="_blank" class="whatsapp-banner">
+        <span class="wa-icon">💬</span>
+        <div class="wa-text">
+            <strong>Join Our WhatsApp Group</strong>
+            <span>Get updates, tips & tournament announcements</span>
+        </div>
+        <span class="wa-arrow">→</span>
+    </a>
+
+
+    <!-- Admin Panel Link (admin only) -->
+    {% if is_admin %}
+    <div style="text-align:right; margin-bottom:1rem;">
+        <a href="{{ url_for('exam.admin_generate_codes') }}" 
+           style="background:#dc2626;color:white;padding:0.5rem 1.2rem;border-radius:8px;text-decoration:none;font-weight:700;">
+            🔑 Admin: Generate Tournament Codes
+        </a>
+    </div>
+    {% endif %}
 
     <div class="statistics">
         <div class="stat-card">
@@ -37,10 +182,10 @@
                 <h3>📋 Full Exam Mode</h3>
                 <span class="subject-badge" style="background-color: #dc3545;">GRADED</span>
             </div>
-            <p class="exam-description">Take a realistic 40-question exam with a 30-minute time limit. Test your knowledge and compete on the leaderboard!</p>
+            <p class="exam-description">Take a realistic 30-question exam with a 30-minute time limit. Test your knowledge and compete on the leaderboard!</p>
             <div class="exam-details">
                 <span>⏱️ 30 minutes</span>
-                <span>❓ 40 questions</span>
+                <span>❓ 30 questions</span>
                 <span>📊 Graded</span>
             </div>
             <div class="exam-actions">
@@ -79,6 +224,22 @@
             </div>
             <div class="exam-actions">
                 <a href="{{ url_for('exam.leaderboard') }}" class="btn btn-warning">View Rankings</a>
+            </div>
+        </div>
+        <!-- Tournament Mode -->
+        <div class="exam-card" style="border-left: 4px solid #6f42c1;">
+            <div class="exam-header">
+                <h3>🏆 Tournament Mode</h3>
+                <span class="subject-badge" style="background-color: #6f42c1;">WEEKENDS ONLY</span>
+            </div>
+            <p class="exam-description">Compete against other students every Saturday & Sunday! Pay ₦500, get your access code, and battle for the top spot on the weekly leaderboard.</p>
+            <div class="exam-details">
+                <span>💳 ₦500 entry</span>
+                <span>❓ 30 questions</span>
+                <span>🏅 Ranked</span>
+            </div>
+            <div class="exam-actions">
+                <a href="{{ url_for('exam.tournament_home') }}" class="btn" style="background:#6f42c1;color:white;">Enter Tournament</a>
             </div>
         </div>
     </div>
@@ -144,4 +305,127 @@
     <p class="no-results">No exam results yet. Start practicing to see your results here!</p>
     {% endif %}
 </div>
+
+    <!-- Floating Calculator -->
+    <button class="calc-fab" onclick="toggleCalc()" title="Calculator">🧮</button>
+
+    <div class="calc-modal" id="calcModal">
+        <div class="calc-header">
+            <span>Calculator</span>
+            <button onclick="toggleCalc()" class="calc-close">✕</button>
+        </div>
+        <div class="calc-screen" id="calcScreen">0</div>
+        <div class="calc-grid">
+            <button class="calc-btn span2" onclick="calcClear()">AC</button>
+            <button class="calc-btn" onclick="calcDel()">⌫</button>
+            <button class="calc-btn op" onclick="calcInput('/')">÷</button>
+            <button class="calc-btn" onclick="calcInput('7')">7</button>
+            <button class="calc-btn" onclick="calcInput('8')">8</button>
+            <button class="calc-btn" onclick="calcInput('9')">9</button>
+            <button class="calc-btn op" onclick="calcInput('*')">×</button>
+            <button class="calc-btn" onclick="calcInput('4')">4</button>
+            <button class="calc-btn" onclick="calcInput('5')">5</button>
+            <button class="calc-btn" onclick="calcInput('6')">6</button>
+            <button class="calc-btn op" onclick="calcInput('-')">−</button>
+            <button class="calc-btn" onclick="calcInput('1')">1</button>
+            <button class="calc-btn" onclick="calcInput('2')">2</button>
+            <button class="calc-btn" onclick="calcInput('3')">3</button>
+            <button class="calc-btn op" onclick="calcInput('+')">+</button>
+            <button class="calc-btn span2" onclick="calcInput('0')">0</button>
+            <button class="calc-btn" onclick="calcInput('.')">.</button>
+            <button class="calc-btn eq" onclick="calcEquals()">=</button>
+        </div>
+    </div>
+
+<style>
+/* WhatsApp Banner */
+.whatsapp-banner {
+    display: flex; align-items: center; gap: 1rem;
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: white; border-radius: 12px; padding: 1rem 1.25rem;
+    text-decoration: none; margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(37,211,102,0.35);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.whatsapp-banner:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(37,211,102,0.45); }
+.wa-icon { font-size: 2rem; }
+.wa-text { flex: 1; display: flex; flex-direction: column; }
+.wa-text strong { font-size: 1rem; }
+.wa-text span { font-size: 0.8rem; opacity: 0.9; }
+.wa-arrow { font-size: 1.4rem; font-weight: 700; }
+
+/* Floating Calculator Button */
+.calc-fab {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 999;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #1a73e8; color: white; border: none;
+    font-size: 1.5rem; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(26,115,232,0.5);
+    transition: transform 0.2s;
+}
+.calc-fab:hover { transform: scale(1.1); }
+
+/* Calculator Modal */
+.calc-modal {
+    display: none; position: fixed; bottom: 5.5rem; right: 2rem; z-index: 1000;
+    background: #1e1e2e; border-radius: 16px; width: 280px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4); overflow: hidden;
+}
+.calc-modal.open { display: block; }
+.calc-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.75rem 1rem; background: #12122a; color: white; font-weight: 700;
+}
+.calc-close { background: none; border: none; color: white; font-size: 1rem; cursor: pointer; }
+.calc-screen {
+    background: #12122a; color: #00e5ff; font-size: 2rem; font-weight: 700;
+    text-align: right; padding: 0.75rem 1rem; min-height: 60px;
+    word-break: break-all; border-bottom: 1px solid #2a2a4a;
+}
+.calc-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    background: #2a2a4a;
+}
+.calc-btn {
+    background: #2a2a4a; color: white; border: none;
+    padding: 1rem; font-size: 1.1rem; cursor: pointer;
+    transition: background 0.15s;
+}
+.calc-btn:hover { background: #3a3a5a; }
+.calc-btn.op { background: #1a3a5a; color: #60a5fa; }
+.calc-btn.eq { background: #1a73e8; color: white; font-weight: 700; }
+.calc-btn.span2 { grid-column: span 2; }
+</style>
+
+<script>
+let calcExpr = '';
+function toggleCalc() {
+    document.getElementById('calcModal').classList.toggle('open');
+}
+function calcInput(val) {
+    if (calcExpr === '0') calcExpr = '';
+    calcExpr += val;
+    document.getElementById('calcScreen').textContent = calcExpr;
+}
+function calcClear() {
+    calcExpr = '0';
+    document.getElementById('calcScreen').textContent = '0';
+}
+function calcDel() {
+    calcExpr = calcExpr.slice(0, -1) || '0';
+    document.getElementById('calcScreen').textContent = calcExpr;
+}
+function calcEquals() {
+    try {
+        let result = Function('"use strict"; return (' + calcExpr + ')')();
+        result = parseFloat(result.toFixed(10));
+        calcExpr = String(result);
+        document.getElementById('calcScreen').textContent = calcExpr;
+    } catch(e) {
+        document.getElementById('calcScreen').textContent = 'Error';
+        calcExpr = '';
+    }
+}
+</script>
+
 {% endblock %}

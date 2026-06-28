@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}UNILAG CBT Practice{% endblock %}</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#1a73e8">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Merit CBT">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png">
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
@@ -17,6 +27,7 @@
                 {% if current_user.is_authenticated %}
                     <li><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
                     <li><a href="{{ url_for('auth.profile') }}">Profile</a></li>
+                    <li><a href="{{ url_for('exam.tournament_home') }}">🏆 Tournament</a></li>
                     <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
                 {% else %}
                     <li><a href="{{ url_for('auth.login') }}">Login</a></li>
@@ -52,5 +63,16 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(reg => console.log('[Merit CBT] Service Worker registered:', reg.scope))
+                    .catch(err => console.error('[Merit CBT] Service Worker error:', err));
+            });
+        }
+    </script>
 </body>
 </html>

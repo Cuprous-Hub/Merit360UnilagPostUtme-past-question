@@ -1,15 +1,37 @@
-from unittest import result
-
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_required, current_user
 from datetime import datetime, timedelta
 from app import db
-from app.models.exam import Exam, Question, Result, Answer, Topic
+from app.models.exam import Exam, Question, Result, Answer, Topic, TournamentEntry
 from app.models.user import User
 from sqlalchemy import desc, func
 import random
+import secrets
+import string
 
 exam_bp = Blueprint('exam', __name__)
+
+TOURNAMENT_BANK_NAME = "Atode Excellence Samuel"
+TOURNAMENT_BANK_ACCOUNT = "8141908356"
+TOURNAMENT_BANK = "OPay"
+TOURNAMENT_FEE = 300
+
+ADMIN_PASSWORD = "ATODE"
+
+
+def is_tournament_open():
+    return datetime.utcnow().weekday() in (5, 6)
+
+
+def generate_tournament_code():
+    alphabet = string.ascii_uppercase + string.digits
+    while True:
+        code = ''.join(secrets.choice(alphabet) for _ in range(8))
+        if not TournamentEntry.query.filter_by(access_code=code).first():
+            return code
+
+
+# ============ STANDARD EXAM ROUTES ============
 
 @exam_bp.route('/exam/<int:exam_id>')
 @login_required
@@ -60,14 +82,10 @@ def submit_answer(exam_id):
         existing_answer.is_correct = is_correct
         existing_answer.score_obtained = score
     else:
-        answer = Answer(
-            result_id=result_id,
-            question_id=question_id,
-            user_answer=user_answer,
-            is_correct=is_correct,
-            score_obtained=score
-        )
-        db.session.add(answer)
+        db.session.add(Answer(
+            result_id=result_id, question_id=question_id,
+            user_answer=user_answer, is_correct=is_correct, score_obtained=score
+        ))
     db.session.commit()
     return jsonify({'success': True, 'is_correct': is_correct})
 
@@ -117,17 +135,13 @@ def exam_mode_home():
 @exam_bp.route('/exam-mode/start', methods=['POST'])
 @login_required
 def exam_mode_start():
-    subjects = ['Mathematics', 'English', 'General Paper']
+    subjects_config = [('English', 20), ('Mathematics', 15), ('General Paper', 5)]
     all_questions = []
-    for subject in subjects:
+    for subject, count in subjects_config:
         questions = Question.query.filter_by(subject=subject).all()
-        if subject == 'Mathematics':
-            all_questions.extend(random.sample(questions, min(20, len(questions))))
-        elif subject == 'English':
-            all_questions.extend(random.sample(questions, min(15, len(questions))))
-        else:
-            all_questions.extend(random.sample(questions, min(5, len(questions))))
-    if len(all_questions) >= 40:
+        if questions:
+            all_questions.extend(random.sample(questions, min(count, len(questions))))
+    if len(all_questions) > 40:
         all_questions = random.sample(all_questions, 40)
     if not all_questions:
         return jsonify({'error': 'No questions available'}), 400
@@ -138,12 +152,12 @@ def exam_mode_start():
         return jsonify({'error': 'No exam found'}), 400
     result = Result(
         user_id=current_user.id,
-        exam_id=exam.id if exam else 1,
+        exam_id=exam.id,
         exam_mode='full_exam',
         selected_subjects='Mathematics,English,General Paper',
         num_questions_allowed=40,
         time_limit_minutes=30,
-        passing_score=30,
+        passing_score=18,
         started_at=datetime.utcnow()
     )
     db.session.add(result)
@@ -151,14 +165,10 @@ def exam_mode_start():
     for q in all_questions:
         existing = Answer.query.filter_by(result_id=result.id, question_id=q.id).first()
         if not existing:
-            placeholder = Answer(
-                result_id=result.id,
-                question_id=q.id,
-                user_answer=None,
-                is_correct=False,
-                score_obtained=0
-            )
-            db.session.add(placeholder)
+            db.session.add(Answer(
+                result_id=result.id, question_id=q.id,
+                user_answer=None, is_correct=False, score_obtained=0
+            ))
     db.session.commit()
     return jsonify({'success': True, 'redirect': url_for('exam.exam_mode_take', result_id=result.id)})
 
@@ -171,13 +181,12 @@ def exam_mode_take(result_id):
         flash('Unauthorized access.', 'error')
         return redirect(url_for('main.dashboard'))
     if result.completed_at:
-        flash('This exam has already been completed.', 'info')
         return redirect(url_for('exam.exam_mode_result', result_id=result_id))
     answers = Answer.query.filter_by(result_id=result_id).all()
     question_ids = [a.question_id for a in answers]
     questions = Question.query.filter(Question.id.in_(question_ids)).all()
-    answered_question_ids = [a.question_id for a in answers if a.user_answer is not None]
-    return render_template('exam/exam_mode_take.html', result=result, questions=questions, answered_ids=answered_question_ids)
+    answered_ids = [a.question_id for a in answers if a.user_answer is not None]
+    return render_template('exam/exam_mode_take.html', result=result, questions=questions, answered_ids=answered_ids)
 
 
 @exam_bp.route('/exam-mode/result/<int:result_id>')
@@ -188,8 +197,7 @@ def exam_mode_result(result_id):
         flash('Unauthorized access.', 'error')
         return redirect(url_for('main.dashboard'))
     answers = Answer.query.filter_by(result_id=result_id).all()
-    total_marks = 40
-    return render_template('exam/exam_mode_result.html', result=result, answers=answers, total_marks=total_marks)
+    return render_template('exam/exam_mode_result.html', result=result, answers=answers, total_marks=30)
 
 
 @exam_bp.route('/api/exam-mode/<int:result_id>/submit-answer', methods=['POST'])
@@ -197,27 +205,23 @@ def exam_mode_result(result_id):
 def exam_mode_submit_answer(result_id):
     data = request.get_json()
     result = Result.query.get_or_404(result_id)
-    question_id = data.get('question_id')
-    user_answer = data.get('answer')
     if result.user_id != current_user.id:
         return jsonify({'error': 'Unauthorized'}), 403
+    question_id = data.get('question_id')
+    user_answer = data.get('answer')
     question = Question.query.get_or_404(question_id)
-    existing_answer = Answer.query.filter_by(result_id=result_id, question_id=question_id).first()
+    existing = Answer.query.filter_by(result_id=result_id, question_id=question_id).first()
     is_correct = user_answer == question.correct_answer
     score = question.marks if is_correct else 0
-    if existing_answer:
-        existing_answer.user_answer = user_answer
-        existing_answer.is_correct = is_correct
-        existing_answer.score_obtained = score
+    if existing:
+        existing.user_answer = user_answer
+        existing.is_correct = is_correct
+        existing.score_obtained = score
     else:
-        answer = Answer(
-            result_id=result_id,
-            question_id=question_id,
-            user_answer=user_answer,
-            is_correct=is_correct,
-            score_obtained=score
-        )
-        db.session.add(answer)
+        db.session.add(Answer(
+            result_id=result_id, question_id=question_id,
+            user_answer=user_answer, is_correct=is_correct, score_obtained=score
+        ))
     db.session.commit()
     return jsonify({'success': True, 'is_correct': is_correct})
 
@@ -232,7 +236,7 @@ def exam_mode_finish(result_id):
     total_score = sum(a.score_obtained for a in answers)
     result.completed_at = datetime.utcnow()
     result.total_score = total_score
-    result.percentage = (total_score / 40 * 100)
+    result.percentage = (total_score / 30 * 100)
     result.is_passed = result.total_score >= result.passing_score
     result.is_graded = True
     result.time_taken_seconds = int((result.completed_at - result.started_at).total_seconds())
@@ -322,27 +326,23 @@ def practice_mode_result(result_id):
 def practice_mode_submit_answer(result_id):
     data = request.get_json()
     result = Result.query.get_or_404(result_id)
-    question_id = data.get('question_id')
-    user_answer = data.get('answer')
     if result.user_id != current_user.id:
         return jsonify({'error': 'Unauthorized'}), 403
+    question_id = data.get('question_id')
+    user_answer = data.get('answer')
     question = Question.query.get_or_404(question_id)
-    existing_answer = Answer.query.filter_by(result_id=result_id, question_id=question_id).first()
+    existing = Answer.query.filter_by(result_id=result_id, question_id=question_id).first()
     is_correct = user_answer == question.correct_answer
     score = question.marks if is_correct else 0
-    if existing_answer:
-        existing_answer.user_answer = user_answer
-        existing_answer.is_correct = is_correct
-        existing_answer.score_obtained = score
+    if existing:
+        existing.user_answer = user_answer
+        existing.is_correct = is_correct
+        existing.score_obtained = score
     else:
-        answer = Answer(
-            result_id=result_id,
-            question_id=question_id,
-            user_answer=user_answer,
-            is_correct=is_correct,
-            score_obtained=score
-        )
-        db.session.add(answer)
+        db.session.add(Answer(
+            result_id=result_id, question_id=question_id,
+            user_answer=user_answer, is_correct=is_correct, score_obtained=score
+        ))
     db.session.commit()
     return jsonify({'success': True, 'is_correct': is_correct, 'explanation': question.explanation})
 
@@ -352,17 +352,297 @@ def practice_mode_submit_answer(result_id):
 @exam_bp.route('/leaderboard')
 @login_required
 def leaderboard():
-    top_results = Result.query.filter_by(exam_mode='full_exam', is_graded=True)\
-        .order_by(desc(Result.total_score))\
-        .limit(50).all()
+    subquery = db.session.query(
+        Result.user_id,
+        func.max(Result.total_score).label('max_score')
+    ).filter(
+        Result.exam_mode == 'full_exam',
+        Result.is_graded == True
+    ).group_by(Result.user_id).subquery()
+
+    top_results = db.session.query(Result).join(
+        subquery,
+        db.and_(
+            Result.user_id == subquery.c.user_id,
+            Result.total_score == subquery.c.max_score
+        )
+    ).filter(
+        Result.exam_mode == 'full_exam',
+        Result.is_graded == True
+    ).order_by(desc(Result.total_score)).limit(50).all()
+
     user_best = Result.query.filter_by(
         user_id=current_user.id,
         exam_mode='full_exam',
         is_graded=True
     ).order_by(desc(Result.total_score)).first()
-    user_rank = db.session.query(func.count(Result.id)).filter(
+
+    user_rank = db.session.query(func.count(func.distinct(Result.user_id))).filter(
         Result.exam_mode == 'full_exam',
         Result.is_graded == True,
         Result.total_score > (user_best.total_score if user_best else 0)
     ).scalar() + 1
-    return render_template('exam/leaderboard.html', top_results=top_results, user_rank=user_rank)
+
+    return render_template('exam/leaderboard.html', top_results=top_results, user_rank=user_rank, user_best=user_best)
+
+
+# ============ FEATURE 4: TOURNAMENT MODE ============
+
+@exam_bp.route('/tournament')
+@login_required
+def tournament_home():
+    open_today = is_tournament_open()
+    day_name = datetime.utcnow().strftime('%A')
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    existing_entry = TournamentEntry.query.filter(
+        TournamentEntry.user_id == current_user.id,
+        TournamentEntry.created_at >= today_start,
+        TournamentEntry.is_used == False
+    ).first()
+    user_result = Result.query.filter_by(
+        user_id=current_user.id,
+        exam_mode='tournament'
+    ).order_by(desc(Result.started_at)).first()
+    week_start = datetime.utcnow() - timedelta(days=datetime.utcnow().weekday())
+    top_results = Result.query.filter(
+        Result.exam_mode == 'tournament',
+        Result.is_graded == True,
+        Result.started_at >= week_start
+    ).order_by(desc(Result.total_score)).limit(20).all()
+    return render_template('exam/tournament.html',
+        open_today=open_today,
+        day_name=day_name,
+        existing_entry=existing_entry,
+        user_result=user_result,
+        top_results=top_results,
+        bank_name=TOURNAMENT_BANK_NAME,
+        bank_account=TOURNAMENT_BANK_ACCOUNT,
+        bank=TOURNAMENT_BANK,
+        fee=TOURNAMENT_FEE
+    )
+
+
+@exam_bp.route('/tournament/verify-code', methods=['POST'])
+@login_required
+def tournament_verify_code():
+    if not is_tournament_open():
+        flash('Tournament is only available on Saturdays and Sundays!', 'error')
+        return redirect(url_for('exam.tournament_home'))
+    code = request.form.get('access_code', '').strip().upper()
+    if not code:
+        flash('Please enter your access code.', 'error')
+        return redirect(url_for('exam.tournament_home'))
+    entry = TournamentEntry.query.filter_by(access_code=code, is_used=False).first()
+    if not entry:
+        flash('Invalid or already used access code. Please check and try again.', 'error')
+        return redirect(url_for('exam.tournament_home'))
+    entry.is_used = True
+    entry.user_id = current_user.id
+    entry.used_at = datetime.utcnow()
+    db.session.commit()
+    flash('Access code verified! Starting your tournament...', 'success')
+    return redirect(url_for('exam.tournament_start'))
+
+
+@exam_bp.route('/tournament/start')
+@login_required
+def tournament_start():
+    if not is_tournament_open():
+        flash('Tournament is only available on Saturdays and Sundays!', 'error')
+        return redirect(url_for('exam.tournament_home'))
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    entry = TournamentEntry.query.filter(
+        TournamentEntry.user_id == current_user.id,
+        TournamentEntry.used_at >= today_start,
+        TournamentEntry.is_used == True
+    ).first()
+    if not entry:
+        flash('You need a valid access code to enter the tournament.', 'error')
+        return redirect(url_for('exam.tournament_home'))
+    today = datetime.utcnow()
+    days_since_saturday = (today.weekday() - 5) % 7
+    weekend_start = today.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days_since_saturday)
+    already_played = Result.query.filter(
+        Result.user_id == current_user.id,
+        Result.exam_mode == 'tournament',
+        Result.is_graded == True,
+        Result.started_at >= weekend_start
+    ).first()
+    if already_played:
+        flash('You have already completed this weekend\'s tournament. Come back next Saturday!', 'error')
+        return redirect(url_for('exam.tournament_home'))
+    subjects_config = [('English', 20), ('Mathematics', 15), ('General Paper', 5)]
+    all_questions = []
+    for subject, count in subjects_config:
+        questions = Question.query.filter_by(subject=subject).all()
+        if questions:
+            all_questions.extend(random.sample(questions, min(count, len(questions))))
+    if len(all_questions) > 40:
+        all_questions = random.sample(all_questions, 40)
+    if not all_questions:
+        flash('No questions available for tournament.', 'error')
+        return redirect(url_for('exam.tournament_home'))
+    exam = Exam.query.filter_by(title='Full Exam').first()
+    if not exam:
+        exam = Exam.query.first()
+    result = Result(
+        user_id=current_user.id,
+        exam_id=exam.id if exam else 1,
+        exam_mode='tournament',
+        selected_subjects='Mathematics,English,General Paper',
+        num_questions_allowed=40,
+        time_limit_minutes=30,
+        passing_score=18,
+        started_at=datetime.utcnow()
+    )
+    db.session.add(result)
+    db.session.commit()
+    for q in all_questions:
+        db.session.add(Answer(
+            result_id=result.id, question_id=q.id,
+            user_answer=None, is_correct=False, score_obtained=0
+        ))
+    db.session.commit()
+    return redirect(url_for('exam.tournament_take', result_id=result.id))
+
+
+@exam_bp.route('/tournament/take/<int:result_id>')
+@login_required
+def tournament_take(result_id):
+    result = Result.query.get_or_404(result_id)
+    if result.user_id != current_user.id or result.exam_mode != 'tournament':
+        flash('Unauthorized access.', 'error')
+        return redirect(url_for('main.dashboard'))
+    if result.completed_at:
+        return redirect(url_for('exam.tournament_result', result_id=result_id))
+    answers = Answer.query.filter_by(result_id=result_id).all()
+    question_ids = [a.question_id for a in answers]
+    questions = Question.query.filter(Question.id.in_(question_ids)).all()
+    answered_ids = [a.question_id for a in answers if a.user_answer is not None]
+    return render_template('exam/tournament_take.html',
+        result=result, questions=questions, answered_ids=answered_ids)
+
+
+@exam_bp.route('/api/tournament/<int:result_id>/submit-answer', methods=['POST'])
+@login_required
+def tournament_submit_answer(result_id):
+    data = request.get_json()
+    result = Result.query.get_or_404(result_id)
+    if result.user_id != current_user.id or result.exam_mode != 'tournament':
+        return jsonify({'error': 'Unauthorized'}), 403
+    question_id = data.get('question_id')
+    user_answer = data.get('answer')
+    question = Question.query.get_or_404(question_id)
+    existing = Answer.query.filter_by(result_id=result_id, question_id=question_id).first()
+    is_correct = user_answer == question.correct_answer
+    score = question.marks if is_correct else 0
+    if existing:
+        existing.user_answer = user_answer
+        existing.is_correct = is_correct
+        existing.score_obtained = score
+    else:
+        db.session.add(Answer(
+            result_id=result_id, question_id=question_id,
+            user_answer=user_answer, is_correct=is_correct, score_obtained=score
+        ))
+    db.session.commit()
+    return jsonify({'success': True, 'is_correct': is_correct})
+
+
+@exam_bp.route('/api/tournament/<int:result_id>/finish', methods=['POST'])
+@login_required
+def tournament_finish(result_id):
+    result = Result.query.get_or_404(result_id)
+    if result.user_id != current_user.id or result.exam_mode != 'tournament':
+        return jsonify({'error': 'Unauthorized'}), 403
+    answers = Answer.query.filter_by(result_id=result_id).all()
+    total_score = sum(a.score_obtained for a in answers)
+    result.completed_at = datetime.utcnow()
+    result.total_score = total_score
+    result.percentage = (total_score / 30 * 100)
+    result.is_passed = result.total_score >= result.passing_score
+    result.is_graded = True
+    result.time_taken_seconds = int((result.completed_at - result.started_at).total_seconds())
+    db.session.commit()
+    return jsonify({'success': True, 'redirect': url_for('exam.tournament_result', result_id=result_id)})
+
+
+@exam_bp.route('/tournament/result/<int:result_id>')
+@login_required
+def tournament_result(result_id):
+    result = Result.query.get_or_404(result_id)
+    if result.user_id != current_user.id:
+        flash('Unauthorized access.', 'error')
+        return redirect(url_for('main.dashboard'))
+    answers = Answer.query.filter_by(result_id=result_id).all()
+    week_start = datetime.utcnow() - timedelta(days=datetime.utcnow().weekday())
+    rank = db.session.query(func.count(Result.id)).filter(
+        Result.exam_mode == 'tournament',
+        Result.is_graded == True,
+        Result.started_at >= week_start,
+        Result.total_score > result.total_score
+    ).scalar() + 1
+    total_participants = db.session.query(func.count(Result.id)).filter(
+        Result.exam_mode == 'tournament',
+        Result.is_graded == True,
+        Result.started_at >= week_start
+    ).scalar()
+    return render_template('exam/tournament_result.html',
+        result=result, answers=answers, total_marks=30,
+        rank=rank, total_participants=total_participants)
+
+
+@exam_bp.route('/admin/unlock', methods=['POST'])
+@login_required
+def admin_unlock():
+    """Check admin password and store unlock flag in session."""
+    pwd = request.form.get('admin_password', '')
+    if pwd == ADMIN_PASSWORD:
+        session['admin_unlocked'] = True
+        flash('Admin access granted.', 'success')
+    else:
+        flash('Wrong password. Access denied.', 'error')
+    return redirect(url_for('exam.admin_generate_codes'))
+
+
+@exam_bp.route('/admin/lock')
+@login_required
+def admin_lock():
+    """Clear admin session flag and return to dashboard."""
+    session.pop('admin_unlocked', None)
+    flash('Admin session locked.', 'info')
+    return redirect(url_for('main.dashboard'))
+
+
+@exam_bp.route('/admin/tournament/generate-codes', methods=['GET', 'POST'])
+@login_required
+def admin_generate_codes():
+    """Password-gated admin panel: generate tournament access codes."""
+    generated = []
+
+    if request.method == 'POST' and session.get('admin_unlocked'):
+        count = int(request.form.get('count', 1))
+        payer_name = request.form.get('payer_name', '').strip() or None
+        payment_reference = request.form.get('payment_reference', '').strip() or None
+
+        for _ in range(min(count, 50)):
+            code = generate_tournament_code()
+            db.session.add(TournamentEntry(
+                access_code=code,
+                is_used=False,
+                payer_name=payer_name,
+                payment_reference=payment_reference,
+                created_at=datetime.utcnow()
+            ))
+            generated.append(code)
+        db.session.commit()
+        flash(f'{len(generated)} code(s) generated successfully!', 'success')
+
+    # Show all unused codes so you can re-copy previously generated ones
+    all_unused = TournamentEntry.query.filter_by(is_used=False).order_by(
+        TournamentEntry.created_at.desc()
+    ).all() if session.get('admin_unlocked') else []
+
+    return render_template('exam/admin_codes.html',
+                           generated_codes=generated,
+                           all_unused=all_unused)

@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block title %}Tournament Mode - Merit360{% endblock %}
+
+{% block content %}
+<div class="tournament-container">
+
+    <!-- Header -->
+    <div class="tournament-header">
+        <div class="trophy-icon">🏆</div>
+        <h1>Merit360 Tournament</h1>
+        <p class="subtitle">Compete against other students every weekend!</p>
+        <div class="day-badge {% if open_today %}open{% else %}closed{% endif %}">
+            {% if open_today %}
+                ✅ OPEN TODAY — {{ day_name }}
+            {% else %}
+                🔒 CLOSED — Opens Saturday & Sunday only
+            {% endif %}
+        </div>
+    </div>
+
+    {% if open_today %}
+
+        <!-- Code Entry Section -->
+        {% if user_result and user_result.is_graded %}
+        <div class="card" style="text-align:center; border:2px solid #dc2626;">
+            <div style="font-size:2rem;">🔒</div>
+            <h2>Already Played This Weekend</h2>
+            <p>You've already completed this weekend's tournament. Come back next Saturday!</p>
+            <a href="{{ url_for('exam.tournament_result', result_id=user_result.id) }}" class="btn btn-primary">View My Result</a>
+        </div>
+
+        {% elif not existing_entry %}
+        <div class="card payment-card">
+            <h2>💳 How to Join</h2>
+            <ol class="steps-list">
+                <li>Transfer <strong>₦300</strong> to the account below</li>
+                <li>Send your payment receipt to the admin via WhatsApp or email</li>
+                <li>Receive your unique <strong>8-character access code</strong></li>
+                <li>Enter the code below to start your tournament</li>
+            </ol>
+
+            <div class="bank-details">
+                <div class="bank-row">
+                    <span class="bank-label">Bank</span>
+                    <span class="bank-value">{{ bank }}</span>
+                </div>
+                <div class="bank-row">
+                    <span class="bank-label">Account Number</span>
+                    <span class="bank-value account-num">{{ bank_account }}</span>
+                </div>
+                <div class="bank-row">
+                    <span class="bank-label">Account Name</span>
+                    <span class="bank-value">{{ bank_name }}</span>
+                </div>
+                <div class="bank-row">
+                    <span class="bank-label">Amount</span>
+                    <span class="bank-value fee">₦{{ fee }}</span>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('exam.tournament_verify_code') }}" class="code-form">
+                <label for="access_code">Enter Your Access Code</label>
+                <div class="code-input-row">
+                    <input type="text" id="access_code" name="access_code"
+                        placeholder="e.g. A3K9BZ2X"
+                        maxlength="8" style="text-transform:uppercase"
+                        autocomplete="off" required>
+                    <button type="submit" class="btn btn-primary">Verify & Enter →</button>
+                </div>
+            </form>
+        </div>
+        {% else %}
+        <!-- Code already verified, ready to start -->
+        <div class="card ready-card">
+            <div class="ready-icon">✅</div>
+            <h2>You're In!</h2>
+            <p>Your access code has been verified. Click below to start your tournament exam.</p>
+            <a href="{{ url_for('exam.tournament_start') }}" class="btn btn-primary btn-large">
+                🚀 Start Tournament Now
+            </a>
+            <p class="warning-text">⚠️ Once started, the 30-minute timer begins immediately.</p>
+        </div>
+        {% endif %}
+
+        <!-- Rules -->
+        <div class="card rules-card">
+            <h2>📋 Tournament Rules</h2>
+            <ul class="rules-list">
+                <li>30 questions — English (15), Mathematics (12), General Paper (3)</li>
+                <li>Time limit: <strong>30 minutes</strong></li>
+                <li>Each correct answer = 1 mark (max score: 30)</li>
+                <li>One attempt per access code — <strong>you cannot retake once started</strong></li>
+                <li>Leaderboard is reset every weekend</li>
+                <li>Top performers will be announced on our platforms</li>
+            </ul>
+        </div>
+
+        <!-- Leaderboard -->
+        {% if top_results %}
+        <div class="card leaderboard-card">
+            <h2>🏅 This Weekend's Leaderboard</h2>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Student</th>
+                        <th>Score</th>
+                        <th>Percentage</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in top_results %}
+                    <tr class="{% if r.user_id == current_user.id %}my-row{% endif %}">
+                        <td>
+                            {% if loop.index == 1 %}🥇
+                            {% elif loop.index == 2 %}🥈
+                            {% elif loop.index == 3 %}🥉
+                            {% else %}{{ loop.index }}{% endif %}
+                        </td>
+                        <td>{{ r.user.username if r.user else 'Student' }}</td>
+                        <td><strong>{{ r.total_score }} / 30</strong></td>
+                        <td>{{ "%.1f"|format(r.percentage) }}%</td>
+                        <td>{{ (r.time_taken_seconds // 60) }}m {{ (r.time_taken_seconds % 60) }}s</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+    {% else %}
+        <!-- Tournament Closed -->
+        <div class="card closed-card">
+            <div class="closed-icon">📅</div>
+            <h2>Tournament Opens This Weekend</h2>
+            <p>Merit360 Tournament runs every <strong>Saturday and Sunday</strong>.</p>
+            <p>Come back this weekend, pay ₦300, and compete for the top spot!</p>
+            <div class="bank-details">
+                <div class="bank-row">
+                    <span class="bank-label">Bank</span>
+                    <span class="bank-value">{{ bank }}</span>
+                </div>
+                <div class="bank-row">
+                    <span class="bank-label">Account Number</span>
+                    <span class="bank-value account-num">{{ bank_account }}</span>
+                </div>
+                <div class="bank-row">
+                    <span class="bank-label">Account Name</span>
+                    <span class="bank-value">{{ bank_name }}</span>
+                </div>
+                <div class="bank-row">
+                    <span class="bank-label">Amount</span>
+                    <span class="bank-value fee">₦{{ fee }}</span>
+                </div>
+            </div>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+
+        <!-- Past leaderboard still visible -->
+        {% if top_results %}
+        <div class="card leaderboard-card">
+            <h2>🏅 Last Weekend's Top Scores</h2>
+            <table class="leaderboard-table">
+                <thead>
+                    <tr><th>Rank</th><th>Student</th><th>Score</th><th>%</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in top_results %}
+                    <tr>
+                        <td>{% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ loop.index }}{% endif %}</td>
+                        <td>{{ r.user.username if r.user else 'Student' }}</td>
+                        <td>{{ r.total_score }} / 30</td>
+                        <td>{{ "%.1f"|format(r.percentage) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+.tournament-container { max-width: 780px; margin: 0 auto; padding: 1rem; }
+
+.tournament-header { text-align: center; padding: 2rem 1rem 1.5rem; }
+.trophy-icon { font-size: 3rem; margin-bottom: 0.5rem; }
+.tournament-header h1 { font-size: 2rem; font-weight: 800; color: #1a1a2e; margin: 0 0 0.25rem; }
+.subtitle { color: #6b7280; font-size: 1rem; margin: 0 0 1rem; }
+.day-badge { display: inline-block; padding: 0.4rem 1.2rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem; }
+.day-badge.open { background: #dcfce7; color: #16a34a; }
+.day-badge.closed { background: #fee2e2; color: #dc2626; }
+
+.card { background: white; border-radius: 14px; padding: 1.5rem; margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.card h2 { font-size: 1.2rem; font-weight: 700; margin: 0 0 1rem; color: #1a1a2e; }
+
+/* Payment card */
+.steps-list { padding-left: 1.5rem; line-height: 2; color: #374151; }
+.bank-details { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px;
+    padding: 1rem; margin: 1.25rem 0; }
+.bank-row { display: flex; justify-content: space-between; align-items: center;
+    padding: 0.4rem 0; border-bottom: 1px solid #e0f2fe; }
+.bank-row:last-child { border-bottom: none; }
+.bank-label { color: #6b7280; font-size: 0.875rem; }
+.bank-value { font-weight: 700; color: #0c4a6e; }
+.account-num { font-size: 1.25rem; letter-spacing: 2px; color: #0369a1; }
+.fee { font-size: 1.3rem; color: #16a34a; }
+
+.code-form label { display: block; font-weight: 600; margin-bottom: 0.5rem; color: #374151; }
+.code-input-row { display: flex; gap: 0.75rem; }
+.code-input-row input { flex: 1; padding: 0.75rem 1rem; border: 2px solid #d1d5db;
+    border-radius: 8px; font-size: 1rem; letter-spacing: 2px; font-weight: 700;
+    text-transform: uppercase; }
+.code-input-row input:focus { border-color: #1a73e8; outline: none; }
+
+/* Ready card */
+.ready-card { text-align: center; border: 2px solid #16a34a; }
+.ready-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+.btn-large { font-size: 1.1rem; padding: 0.9rem 2rem; margin: 1rem 0 0.5rem; }
+.warning-text { color: #d97706; font-size: 0.875rem; font-weight: 600; }
+
+/* Rules */
+.rules-list { padding-left: 1.5rem; line-height: 2.2; color: #374151; }
+
+/* Leaderboard */
+.leaderboard-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.leaderboard-table th { background: #1a1a2e; color: white; padding: 0.6rem 0.75rem; text-align: left; }
+.leaderboard-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f3f4f6; }
+.leaderboard-table tr:hover { background: #f9fafb; }
+.my-row { background: #fef9c3 !important; font-weight: 700; }
+
+/* Closed */
+.closed-card { text-align: center; }
+.closed-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+
+.btn { display: inline-block; padding: 0.6rem 1.4rem; border-radius: 8px; font-weight: 600;
+    text-decoration: none; border: none; cursor: pointer; transition: opacity 0.2s; }
+.btn:hover { opacity: 0.88; }
+.btn-primary { background: #1a73e8; color: white; }
+.btn-secondary { background: #6b7280; color: white; }
+
+@media (max-width: 480px) {
+    .code-input-row { flex-direction: column; }
+    .bank-row { flex-direction: column; align-items: flex-start; gap: 0.1rem; }
+}
+</style>
+{% endblock %}

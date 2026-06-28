@@ -1,50 +1,53 @@
 {% extends "base.html" %}
 
-{% block title %}Practice Result - UNILAG CBT{% endblock %}
+{% block title %}Tournament Result - UNILAG CBT{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
     <div class="row">
         <div class="col-lg-8 mx-auto">
 
+            <!-- Rank Banner -->
+            <div class="rank-banner text-center mb-4">
+                <div class="rank-medal">
+                    {% if rank == 1 %}🥇{% elif rank == 2 %}🥈{% elif rank == 3 %}🥉{% else %}🏅{% endif %}
+                </div>
+                <h2>You ranked <strong>#{{ rank }}</strong> out of {{ total_participants }} participants</h2>
+                <p class="text-muted">This weekend's tournament</p>
+            </div>
+
             <!-- Score Summary -->
             <div class="card shadow mb-4">
-                <div class="card-header bg-success text-white">
-                    <h3 class="mb-0">📚 Practice Session Complete</h3>
+                <div class="card-header {% if result.is_passed %}bg-success{% else %}bg-danger{% endif %} text-white">
+                    <h3 class="mb-0">
+                        {% if result.is_passed %}✅ PASSED{% else %}❌ NOT PASSED{% endif %}
+                        &nbsp;— Tournament Mode
+                    </h3>
                 </div>
                 <div class="card-body">
-                    <h5 class="mb-3">Topic: <strong>{{ result.selected_topic.name }}</strong></h5>
-
                     <div class="row text-center">
-                        <div class="col-md-4">
-                            <h4 class="text-success">{{ result.total_score }}/{{ answers|length }}</h4>
-                            <p class="text-muted">Correct Answers</p>
+                        <div class="col-md-3">
+                            <h4 class="text-primary">{{ result.total_score }}/30</h4>
+                            <p class="text-muted">Score</p>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <h4 class="text-info">{{ result.percentage|round(1) }}%</h4>
-                            <p class="text-muted">Accuracy</p>
+                            <p class="text-muted">Percentage</p>
                         </div>
-                        <div class="col-md-4">
-                            <h4 class="text-warning">{{ answers|length }}</h4>
-                            <p class="text-muted">Total Questions</p>
+                        <div class="col-md-3">
+                            <h4 class="text-warning">{{ (result.time_taken_seconds / 60)|int }}m {{ result.time_taken_seconds % 60 }}s</h4>
+                            <p class="text-muted">Time Taken</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-success">#{{ rank }}</h4>
+                            <p class="text-muted">Your Rank</p>
                         </div>
                     </div>
-
                     <div class="progress mt-4" style="height: 30px;">
-                        <div class="progress-bar bg-success"
+                        <div class="progress-bar {% if result.is_passed %}bg-success{% else %}bg-danger{% endif %}"
                             role="progressbar" style="width: {{ result.percentage }}%;">
                             {{ result.percentage|round(1) }}%
                         </div>
-                    </div>
-
-                    <div class="alert alert-info mt-4">
-                        <strong>💡 Practice Tips:</strong>
-                        <ul class="mb-0 mt-2">
-                            <li>Review your incorrect answers below</li>
-                            <li>Read each explanation carefully</li>
-                            <li>Try different topics to broaden knowledge</li>
-                            <li>Take the full exam when you're confident</li>
-                        </ul>
                     </div>
                 </div>
             </div>
@@ -52,7 +55,7 @@
             <!-- Correction Section -->
             <div class="card shadow mb-4">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">📖 Review Your Answers</h5>
+                    <h5 class="mb-0">📖 Question Review</h5>
                     <div>
                         <span class="badge badge-light text-success mr-2">✓ {{ answers|selectattr('is_correct')|list|length }} Correct</span>
                         <span class="badge badge-light text-danger">✗ {{ answers|rejectattr('is_correct')|list|length }} Wrong</span>
@@ -60,19 +63,16 @@
                 </div>
                 <div class="card-body">
 
-                    <!-- Filter Tabs -->
                     <div class="correction-tabs mb-4">
                         <button class="tab-btn active" onclick="filterQuestions('all', event)">All</button>
                         <button class="tab-btn" onclick="filterQuestions('incorrect', event)">Wrong Only</button>
                         <button class="tab-btn" onclick="filterQuestions('correct', event)">Correct Only</button>
                     </div>
 
-                    <!-- Question Cards -->
                     {% for answer in answers %}
                     <div class="correction-card {% if answer.is_correct %}correct{% else %}incorrect{% endif %} mb-3"
                          data-status="{% if answer.is_correct %}correct{% else %}incorrect{% endif %}">
 
-                        <!-- Header -->
                         <div class="correction-card-header">
                             <span class="q-number">Q{{ loop.index }}</span>
                             {% if answer.is_correct %}
@@ -80,21 +80,17 @@
                             {% else %}
                                 <span class="result-badge incorrect">✗ Incorrect</span>
                             {% endif %}
+                            {% if answer.question.subject %}
+                                <span class="subject-tag">{{ answer.question.subject }}</span>
+                            {% endif %}
                         </div>
 
-                        <!-- Full Question -->
                         <p class="correction-question">{{ answer.question.question_text }}</p>
 
-                        <!-- Options -->
                         {% if answer.question.option_a %}
                         <ul class="correction-options">
-                            {% set options = [
-                                ('A', answer.question.option_a),
-                                ('B', answer.question.option_b),
-                                ('C', answer.question.option_c),
-                                ('D', answer.question.option_d)
-                            ] %}
-                            {% for opt_label, opt_val in options %}
+                            {% for opt_key, opt_label in [('option_a', 'A'), ('option_b', 'B'), ('option_c', 'C'), ('option_d', 'D')] %}
+                                {% set opt_val = answer.question[opt_key] if answer.question[opt_key] is defined else '' %}
                                 {% if opt_val %}
                                 <li class="option-item
                                     {% if opt_label == answer.question.correct_answer %}correct-option{% endif %}
@@ -126,14 +122,12 @@
                         </div>
                         {% endif %}
 
-                        <!-- Explanation -->
                         {% if answer.question.explanation %}
                         <div class="correction-explanation">
                             <p class="explanation-label">💡 Explanation</p>
                             <p>{{ answer.question.explanation }}</p>
                         </div>
                         {% endif %}
-
                     </div>
                     {% endfor %}
 
@@ -142,8 +136,8 @@
 
             <!-- Action Buttons -->
             <div class="text-center mb-4">
-                <a href="{{ url_for('exam.practice_mode_home') }}" class="btn btn-lg btn-success">📚 Practice Another Topic</a>
-                <a href="{{ url_for('exam.exam_mode_home') }}" class="btn btn-lg btn-primary">📋 Take Full Exam</a>
+                <a href="{{ url_for('exam.tournament_home') }}" class="btn btn-lg btn-warning">🏆 Tournament Home</a>
+                <a href="{{ url_for('exam.leaderboard') }}" class="btn btn-lg btn-info">📊 Leaderboard</a>
                 <a href="{{ url_for('main.dashboard') }}" class="btn btn-lg btn-secondary">← Dashboard</a>
             </div>
 
@@ -163,4 +157,12 @@ function filterQuestions(type, event) {
     });
 }
 </script>
+<style>
+.rank-banner { padding: 1.5rem; background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border-radius: 14px; color: white; margin-bottom: 1.5rem; }
+.rank-medal { font-size: 3rem; margin-bottom: 0.5rem; }
+.rank-banner h2 { font-size: 1.4rem; margin: 0; }
+.rank-banner p { opacity: 0.75; margin: 0.25rem 0 0; }
+</style>
+{% include 'partials/correction_styles.html' ignore missing %}
 {% endblock %}

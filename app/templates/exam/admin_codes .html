@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel - Tournament Codes{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="col-lg-6 mx-auto">
+
+        {# ── Step 1: Admin password gate ── #}
+        {% if not session.get('admin_unlocked') %}
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                <h4 class="mb-0">🔐 Admin Access</h4>
+            </div>
+            <div class="card-body">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endwith %}
+                <form method="POST" action="{{ url_for('exam.admin_unlock') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Enter Admin Password</label>
+                        <input type="password" name="admin_password" class="form-control form-control-lg"
+                               placeholder="Password" autofocus required>
+                    </div>
+                    <button type="submit" class="btn btn-dark w-100">Unlock</button>
+                </form>
+            </div>
+        </div>
+
+        {# ── Step 2: Code generation panel (shown after password) ── #}
+        {% else %}
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">🔑 Generate Tournament Access Codes</h4>
+                <a href="{{ url_for('exam.admin_lock') }}" class="btn btn-sm btn-outline-light">Lock</a>
+            </div>
+            <div class="card-body">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endwith %}
+
+                <form method="POST" action="{{ url_for('exam.admin_generate_codes') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label">Number of codes to generate (max 50)</label>
+                        <input type="number" name="count" class="form-control" min="1" max="50" value="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payer Name <span class="text-muted">(optional, for records)</span></label>
+                        <input type="text" name="payer_name" class="form-control" placeholder="e.g. John Doe">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Reference <span class="text-muted">(optional)</span></label>
+                        <input type="text" name="payment_reference" class="form-control" placeholder="e.g. TRF123456">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Generate Codes</button>
+                </form>
+
+                {% if generated_codes %}
+                <hr>
+                <h5>✅ Generated Codes — copy and send to students:</h5>
+                <div class="code-list">
+                    {% for code in generated_codes %}
+                    <div class="code-item">
+                        <span class="code-text">{{ code }}</span>
+                        <button onclick="navigator.clipboard.writeText('{{ code }}'); this.textContent='Copied!'"
+                                class="btn btn-sm btn-outline-secondary">Copy</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button onclick="copyAll()" class="btn btn-success w-100 mt-3">📋 Copy All Codes</button>
+                <script>
+                function copyAll() {
+                    const codes = {{ generated_codes | tojson }};
+                    navigator.clipboard.writeText(codes.join('\n'));
+                    event.target.textContent = '✅ All Copied!';
+                }
+                </script>
+                {% endif %}
+
+                {# ── All unused codes in DB ── #}
+                {% if all_unused %}
+                <hr>
+                <h6 class="text-muted">All Unused Codes in Database ({{ all_unused|length }})</h6>
+                <div class="code-list" style="max-height:300px;overflow-y:auto;">
+                    {% for entry in all_unused %}
+                    <div class="code-item">
+                        <div>
+                            <span class="code-text">{{ entry.access_code }}</span>
+                            {% if entry.payer_name %}
+                            <small class="text-muted ms-2">{{ entry.payer_name }}</small>
+                            {% endif %}
+                        </div>
+                        <button onclick="navigator.clipboard.writeText('{{ entry.access_code }}'); this.textContent='Copied!'"
+                                class="btn btn-sm btn-outline-secondary">Copy</button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-3">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.code-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+.code-item { display: flex; justify-content: space-between; align-items: center;
+    background: #f8f9fa; padding: 0.6rem 1rem; border-radius: 8px; border: 1px solid #dee2e6; }
+.code-text { font-family: monospace; font-size: 1.1rem; font-weight: 700; letter-spacing: 2px; color: #1a73e8; }
+</style>
+{% endblock %}

@@ -16,12 +16,12 @@
         </div>
         <div class="score-detail">
             <p><strong>Points:</strong> {{ result.total_score }} / {{ total_marks }}</p>
-            <p><strong>Status:</strong> 
+            <p><strong>Status:</strong>
                 <span class="status {% if result.is_passed %}passed{% else %}failed{% endif %}">
                     {% if result.is_passed %}✓ PASSED{% else %}✗ FAILED{% endif %}
                 </span>
             </p>
-            <p><strong>Time Taken:</strong> 
+            <p><strong>Time Taken:</strong>
                 {% set minutes = result.time_taken_seconds // 60 %}
                 {% set seconds = result.time_taken_seconds % 60 %}
                 {{ minutes }}m {{ seconds }}s
@@ -30,45 +30,83 @@
         </div>
     </div>
 
-    <div class="detailed-results">
-        <h3>Detailed Analysis</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Question</th>
-                    <th>Your Answer</th>
-                    <th>Correct Answer</th>
-                    <th>Status</th>
-                    <th>Explanation</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for answer in answers %}
-                <tr class="{% if answer.is_correct %}correct{% else %}incorrect{% endif %}">
-                    <td>Q{{ loop.index }}: {{ answer.question.question_text[:50] }}...</td>
-                    <td class="user-answer">{{ answer.user_answer or 'Not answered' }}</td>
-                    <td class="correct-answer">{{ answer.question.correct_answer }}</td>
-                    <td>
-                        {% if answer.is_correct %}
-                        <span class="result-badge correct">✓ Correct</span>
-                        {% else %}
-                        <span class="result-badge incorrect">✗ Incorrect</span>
+    <!-- Summary Bar -->
+    <div class="correction-summary">
+        <span class="corr-correct">✓ {{ answers|selectattr('is_correct')|list|length }} Correct</span>
+        <span class="corr-incorrect">✗ {{ answers|rejectattr('is_correct')|list|length }} Incorrect</span>
+        <span class="corr-total">{{ answers|length }} Total</span>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="correction-tabs">
+        <button class="tab-btn active" onclick="filterQuestions('all')">All Questions</button>
+        <button class="tab-btn" onclick="filterQuestions('incorrect')">Wrong Only</button>
+        <button class="tab-btn" onclick="filterQuestions('correct')">Correct Only</button>
+    </div>
+
+    <!-- Correction Section -->
+    <div class="correction-list">
+        {% for answer in answers %}
+        <div class="correction-card {% if answer.is_correct %}correct{% else %}incorrect{% endif %}" 
+             data-status="{% if answer.is_correct %}correct{% else %}incorrect{% endif %}">
+            
+            <!-- Question Header -->
+            <div class="correction-card-header">
+                <span class="q-number">Q{{ loop.index }}</span>
+                {% if answer.is_correct %}
+                    <span class="result-badge correct">✓ Correct</span>
+                {% else %}
+                    <span class="result-badge incorrect">✗ Incorrect</span>
+                {% endif %}
+            </div>
+
+            <!-- Full Question Text -->
+            <p class="correction-question">{{ answer.question.question_text }}</p>
+
+            <!-- Options -->
+            {% if answer.question.option_a %}
+            <ul class="correction-options">
+                {% for opt_key, opt_label in [('option_a', 'A'), ('option_b', 'B'), ('option_c', 'C'), ('option_d', 'D')] %}
+                    {% set opt_val = answer.question[opt_key] if answer.question[opt_key] is defined else '' %}
+                    {% if opt_val %}
+                    <li class="option-item 
+                        {% if opt_label == answer.question.correct_answer %}correct-option{% endif %}
+                        {% if opt_label == answer.user_answer and not answer.is_correct %}wrong-option{% endif %}">
+                        <span class="opt-label">{{ opt_label }}.</span> {{ opt_val }}
+                        {% if opt_label == answer.question.correct_answer %}
+                            <span class="opt-tag correct-tag">✓ Correct Answer</span>
                         {% endif %}
-                    </td>
-                    <td>
-                        {% if answer.question.explanation %}
-                        <details>
-                            <summary>View</summary>
-                            <p>{{ answer.question.explanation }}</p>
-                        </details>
-                        {% else %}
-                        -
+                        {% if opt_label == answer.user_answer and not answer.is_correct %}
+                            <span class="opt-tag wrong-tag">✗ Your Answer</span>
                         {% endif %}
-                    </td>
-                </tr>
+                        {% if opt_label == answer.user_answer and answer.is_correct %}
+                            <span class="opt-tag correct-tag">✓ Your Answer</span>
+                        {% endif %}
+                    </li>
+                    {% endif %}
                 {% endfor %}
-            </tbody>
-        </table>
+            </ul>
+            {% else %}
+            <!-- Fallback if no options stored (text answer) -->
+            <div class="answer-comparison">
+                <p class="your-ans {% if answer.is_correct %}ans-correct{% else %}ans-wrong{% endif %}">
+                    <strong>Your Answer:</strong> {{ answer.user_answer or 'Not answered' }}
+                </p>
+                <p class="correct-ans">
+                    <strong>Correct Answer:</strong> {{ answer.question.correct_answer }}
+                </p>
+            </div>
+            {% endif %}
+
+            <!-- Explanation -->
+            {% if answer.question.explanation %}
+            <div class="correction-explanation">
+                <p class="explanation-label">💡 Explanation</p>
+                <p>{{ answer.question.explanation }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
     </div>
 
     <div class="result-actions">
@@ -76,4 +114,168 @@
         <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterQuestions(type) {
+    // Update active tab
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+
+    // Show/hide cards
+    document.querySelectorAll('.correction-card').forEach(card => {
+        if (type === 'all') {
+            card.style.display = 'block';
+        } else {
+            card.style.display = card.dataset.status === type ? 'block' : 'none';
+        }
+    });
+}
+</script>
+
+<style>
+/* ── Correction Summary ── */
+.correction-summary {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.corr-correct { color: #16a34a; }
+.corr-incorrect { color: #dc2626; }
+.corr-total { color: #6b7280; }
+
+/* ── Filter Tabs ── */
+.correction-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+.tab-btn {
+    padding: 0.4rem 1rem;
+    border: 1px solid #d1d5db;
+    background: white;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+.tab-btn.active, .tab-btn:hover {
+    background: #1a73e8;
+    color: white;
+    border-color: #1a73e8;
+}
+
+/* ── Correction Cards ── */
+.correction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+.correction-card {
+    border-radius: 10px;
+    padding: 1.25rem;
+    border-left: 5px solid #d1d5db;
+    background: #f9fafb;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.correction-card.correct { border-left-color: #16a34a; background: #f0fdf4; }
+.correction-card.incorrect { border-left-color: #dc2626; background: #fef2f2; }
+
+.correction-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+.q-number {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #374151;
+}
+.result-badge {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-weight: 600;
+}
+.result-badge.correct { background: #dcfce7; color: #16a34a; }
+.result-badge.incorrect { background: #fee2e2; color: #dc2626; }
+
+.correction-question {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #111827;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+/* ── Options ── */
+.correction-options {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.option-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    background: white;
+    border: 1px solid #e5e7eb;
+    font-size: 0.9rem;
+    flex-wrap: wrap;
+}
+.option-item.correct-option {
+    background: #dcfce7;
+    border-color: #16a34a;
+    font-weight: 600;
+}
+.option-item.wrong-option {
+    background: #fee2e2;
+    border-color: #dc2626;
+    text-decoration: line-through;
+    opacity: 0.85;
+}
+.opt-label { font-weight: 700; color: #374151; }
+.opt-tag {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.1rem 0.5rem;
+    border-radius: 10px;
+}
+.correct-tag { background: #16a34a; color: white; }
+.wrong-tag { background: #dc2626; color: white; }
+
+/* ── Answer Comparison (text fallback) ── */
+.answer-comparison { margin-bottom: 0.75rem; }
+.your-ans, .correct-ans { font-size: 0.9rem; margin: 0.25rem 0; }
+.ans-correct { color: #16a34a; }
+.ans-wrong { color: #dc2626; }
+
+/* ── Explanation ── */
+.correction-explanation {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    color: #374151;
+    line-height: 1.6;
+}
+.explanation-label {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    color: #b45309;
+}
+</style>
 {% endblock %}

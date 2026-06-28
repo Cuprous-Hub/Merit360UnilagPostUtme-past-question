@@ -16,6 +16,9 @@ class User(UserMixin, db.Model):
     department = db.Column(db.String(100))
     admission_year = db.Column(db.Integer)
 
+    # Admin
+    is_admin = db.Column(db.Boolean, default=False)
+
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
