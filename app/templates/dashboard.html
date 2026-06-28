@@ -37,10 +37,10 @@
                 <h3>📋 Full Exam Mode</h3>
                 <span class="subject-badge" style="background-color: #dc3545;">GRADED</span>
             </div>
-            <p class="exam-description">Take a realistic 40-question exam with a 30-minute time limit. Test your knowledge and compete on the leaderboard!</p>
+            <p class="exam-description">Take a realistic 30-question exam with a 30-minute time limit. Test your knowledge and compete on the leaderboard!</p>
             <div class="exam-details">
                 <span>⏱️ 30 minutes</span>
-                <span>❓ 40 questions</span>
+                <span>❓ 30 questions</span>
                 <span>📊 Graded</span>
             </div>
             <div class="exam-actions">
@@ -79,6 +79,22 @@
             </div>
             <div class="exam-actions">
                 <a href="{{ url_for('exam.leaderboard') }}" class="btn btn-warning">View Rankings</a>
+            </div>
+        </div>
+        <!-- Tournament Mode -->
+        <div class="exam-card" style="border-left: 4px solid #6f42c1;">
+            <div class="exam-header">
+                <h3>🏆 Tournament Mode</h3>
+                <span class="subject-badge" style="background-color: #6f42c1;">WEEKENDS ONLY</span>
+            </div>
+            <p class="exam-description">Compete against other students every Saturday & Sunday! Pay ₦500, get your access code, and battle for the top spot on the weekly leaderboard.</p>
+            <div class="exam-details">
+                <span>💳 ₦500 entry</span>
+                <span>❓ 30 questions</span>
+                <span>🏅 Ranked</span>
+            </div>
+            <div class="exam-actions">
+                <a href="{{ url_for('exam.tournament_home') }}" class="btn" style="background:#6f42c1;color:white;">Enter Tournament</a>
             </div>
         </div>
     </div>
