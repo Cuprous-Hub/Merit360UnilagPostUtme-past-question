@@ -27,7 +27,8 @@
                 {% if current_user.is_authenticated %}
                     <li><a href="{{ url_for('main.dashboard') }}">Dashboard</a></li>
                     <li><a href="{{ url_for('auth.profile') }}">Profile</a></li>
-                    <li><a href="{{ url_for('exam.tournament_home') }}">🏆 Tournament</a></li>
+                    <li><a href="{{ url_for('exam.exam_mode_home') }}">📋 Exam Mode</a></li>
+                    <li><a href="{{ url_for('exam.practice_mode_home') }}">📝 Practice Mode</a></li>
                     <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
                 {% else %}
                     <li><a href="{{ url_for('auth.login') }}">Login</a></li>
