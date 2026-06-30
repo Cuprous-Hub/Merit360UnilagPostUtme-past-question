@@ -646,3 +646,18 @@ def admin_generate_codes():
     return render_template('exam/admin_codes.html',
                            generated_codes=generated,
                            all_unused=all_unused)
+@exam_bp.route('/admin/fix-db-schema-xk29')
+def fix_db_schema_xk29():
+    from sqlalchemy import text
+    try:
+        db.session.execute(text("ALTER TABLE results ADD COLUMN IF NOT EXISTS exam_mode VARCHAR(50) DEFAULT 'practice_topic';"))
+        db.session.execute(text("ALTER TABLE results ADD COLUMN IF NOT EXISTS selected_topic_id INTEGER REFERENCES topics(id);"))
+        db.session.execute(text("ALTER TABLE results ADD COLUMN IF NOT EXISTS selected_subjects VARCHAR(200);"))
+        db.session.execute(text("ALTER TABLE results ADD COLUMN IF NOT EXISTS num_questions_allowed INTEGER DEFAULT 30;"))
+        db.session.execute(text("ALTER TABLE results ADD COLUMN IF NOT EXISTS time_limit_minutes INTEGER DEFAULT 30;"))
+        db.session.execute(text("ALTER TABLE results ADD COLUMN IF NOT EXISTS is_graded BOOLEAN DEFAULT FALSE;"))
+        db.session.commit()
+        return "Schema fixed successfully!"
+    except Exception as e:
+        db.session.rollback()
+        return f"Error: {str(e)}"
