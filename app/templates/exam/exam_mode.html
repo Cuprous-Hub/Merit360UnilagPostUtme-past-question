@@ -14,7 +14,7 @@
                     <div class="alert alert-info" role="alert">
                         <strong>⏰ This is a GRADED exam with real test conditions:</strong>
                         <ul class="mb-0 mt-2">
-                            <li>30 Questions (mixed subjects)</li>
+                            <li>40 Questions (mixed subjects)</li>
                             <li>30 Minutes Time Limit</li>
                             <li>Subjects: Mathematics, English, General Paper</li>
                             <li>Graded out of 30 marks (passing score)</li>
@@ -25,7 +25,7 @@
                     <div class="row mt-4">
                         <div class="col-md-4 mb-3">
                             <div class="text-center">
-                                <h4>30</h4>
+                                <h4>40</h4>
                                 <p class="text-muted">Questions</p>
                             </div>
                         </div>
@@ -78,8 +78,7 @@
         fetch('{{ url_for("exam.exam_mode_start") }}', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
+                'Content-Type': 'application/json'
             }
         })
         .then(response => response.json())
