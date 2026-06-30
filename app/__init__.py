@@ -1,12 +1,9 @@
 from flask import Flask
 from dotenv import load_dotenv
-from app.extensions import db, login_manager
-from flask_wtf.csrf import CSRFProtect
+from app.extensions import db, login_manager  # import from extensions now
 import os
 
 load_dotenv()
-
-csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
@@ -27,7 +24,6 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
-    csrf.init_app(app)
 
     # Register blueprints
     from app.routes import main_bp, auth_bp, exam_bp
