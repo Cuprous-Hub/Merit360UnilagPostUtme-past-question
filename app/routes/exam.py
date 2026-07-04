@@ -137,14 +137,14 @@ def exam_mode_home():
 @exam_bp.route('/exam-mode/start', methods=['POST'])
 @login_required
 def exam_mode_start():
-    subjects_config = [('English', 20), ('Mathematics', 15), ('General Paper', 5)]
+    subjects_config = [('English', 10), ('Mathematics', 10), ('General Paper', 10)]
     all_questions = []
     for subject, count in subjects_config:
         questions = Question.query.filter_by(subject=subject).all()
         if questions:
             all_questions.extend(random.sample(questions, min(count, len(questions))))
-    if len(all_questions) > 40:
-        all_questions = random.sample(all_questions, 40)
+    if len(all_questions) > 30:
+        all_questions = random.sample(all_questions, 30)
     if not all_questions:
         return jsonify({'error': 'No questions available'}), 400
     exam = Exam.query.filter_by(title='Full Exam').first()
@@ -157,7 +157,7 @@ def exam_mode_start():
         exam_id=exam.id,
         exam_mode='full_exam',
         selected_subjects='Mathematics,English,General Paper',
-        num_questions_allowed=40,
+        num_questions_allowed=30,
         time_limit_minutes=30,
         passing_score=18,
         started_at=datetime.utcnow()

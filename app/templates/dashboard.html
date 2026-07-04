@@ -182,14 +182,15 @@ function calcEquals() {
                 <h3>📋 Full Exam Mode</h3>
                 <span class="subject-badge" style="background-color: #dc3545;">GRADED</span>
             </div>
-            <p class="exam-description">Take a realistic 30-question exam with a 30-minute time limit. Test your knowledge and compete on the leaderboard!</p>
+            <p class="exam-description">Take a realistic 30-question exam with a 30-minute time limit and a 30-mark scoring system. Measure your preparation and compare your performance.</p>
             <div class="exam-details">
                 <span>⏱️ 30 minutes</span>
                 <span>❓ 30 questions</span>
-                <span>📊 Graded</span>
+                <span>📊 30 marks</span>
             </div>
             <div class="exam-actions">
                 <a href="{{ url_for('exam.exam_mode_home') }}" class="btn btn-danger">Start Exam</a>
+                <a href="{{ url_for('main.analytics') }}" class="btn btn-outline-primary">View Analytics</a>
             </div>
         </div>
 

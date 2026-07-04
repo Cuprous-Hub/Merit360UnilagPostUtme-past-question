@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Performance Analytics - UNILAG CBT{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">📊 Performance Analytics</h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-{{ insight_badge }}">
+                        <strong>{{ preparation_level }}</strong> — {{ insight }}
+                    </div>
+
+                    <div class="row text-center mb-4">
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-primary h-100">
+                                <div class="card-body">
+                                    <h4 class="text-primary">{{ total_tests }}</h4>
+                                    <p class="text-muted mb-0">Completed Tests</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-success h-100">
+                                <div class="card-body">
+                                    <h4 class="text-success">{{ passed_tests }}</h4>
+                                    <p class="text-muted mb-0">Passed</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-info h-100">
+                                <div class="card-body">
+                                    <h4 class="text-info">{{ avg_score|round(1) }}/30</h4>
+                                    <p class="text-muted mb-0">Average Score</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-warning h-100">
+                                <div class="card-body">
+                                    <h4 class="text-warning">{{ avg_percentage|round(1) }}%</h4>
+                                    <p class="text-muted mb-0">Average Accuracy</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5>🏅 Your Best Performance</h5>
+                                    <p class="mb-1"><strong>Best Score:</strong> {{ best_score }}/30</p>
+                                    <p class="mb-1"><strong>Best Accuracy:</strong> {{ best_percentage|round(1) }}%</p>
+                                    {% if latest_result %}
+                                    <p class="mb-0"><strong>Latest Attempt:</strong> {{ latest_result.completed_at.strftime('%d %b %Y') if latest_result.completed_at else 'In progress' }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5>📈 Class Comparison</h5>
+                                    <p class="mb-1"><strong>Your Rank:</strong> #{{ user_rank }} among {{ total_students }} students</p>
+                                    <p class="mb-1"><strong>Class Average:</strong> {{ overall_avg_score|round(1) }}%</p>
+                                    <p class="mb-0"><strong>Top Score:</strong> {{ top_score }}/30</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0">🧠 Subject Strength Breakdown</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if subject_breakdown %}
+                            {% for item in subject_breakdown %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <strong>{{ item.subject }}</strong>
+                                    <span>{{ item.accuracy }}%</span>
+                                </div>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ item.accuracy }}%;"></div>
+                                </div>
+                                <small class="text-muted">{{ item.correct }}/{{ item.attempted }} correct answers</small>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="text-muted mb-0">Complete a few tests to unlock subject-level insights.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4 mb-4">
+                <a href="{{ url_for('exam.exam_mode_home') }}" class="btn btn-primary">📋 Take Another Exam</a>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">← Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

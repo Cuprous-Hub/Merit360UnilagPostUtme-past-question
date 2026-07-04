@@ -6,6 +6,7 @@ import os
 
 csrf = CSRFProtect()
 
+
 def create_app():
     app = Flask(__name__)
 

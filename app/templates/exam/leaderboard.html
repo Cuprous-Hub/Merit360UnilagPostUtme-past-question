@@ -13,7 +13,7 @@
                 </div>
                 <div class="card-body">
                     <p class="mb-0">
-                        Top performers in the <strong>Full Exam Mode</strong> (40 questions, 30 minutes)
+                        Top performers in the <strong>Full Exam Mode</strong> (30 questions, 30 minutes, 30-mark scale)
                     </p>
                 </div>
             </div>
@@ -31,7 +31,7 @@
                             <h5 class="card-title">{{ result.user.username }}</h5>
                             <p class="text-muted">{{ result.user.full_name or 'N/A' }}</p>
                             <div class="score-display">
-                                <h4 class="text-primary">{{ result.total_score }}/40</h4>
+                                <h4 class="text-primary">{{ result.total_score }}/30</h4>
                                 <p class="text-muted">{{ result.percentage|round(1) }}%</p>
                             </div>
                             <small class="text-muted d-block mt-2">
@@ -81,7 +81,7 @@
                                 </td>
                                 <td>{{ result.user.full_name or '—' }}</td>
                                 <td>
-                                    <span class="badge badge-success">{{ result.total_score }}/40</span>
+                                    <span class="badge badge-success">{{ result.total_score }}/30</span>
                                 </td>
                                 <td>
                                     <div class="progress" style="width: 100px; height: 20px;">
@@ -145,6 +145,9 @@
             <div class="text-center mt-4 mb-4">
                 <a href="{{ url_for('exam.exam_mode_home') }}" class="btn btn-lg btn-primary">
                     📋 Challenge the Leaderboard
+                </a>
+                <a href="{{ url_for('main.analytics') }}" class="btn btn-lg btn-info">
+                    📊 View Analytics
                 </a>
                 <a href="{{ url_for('main.dashboard') }}" class="btn btn-lg btn-secondary">
                     ← Back to Dashboard

@@ -22,6 +22,8 @@ body {
     line-height: 1.6;
     color: var(--dark-color);
     background-color: #f5f5f5;
+    font-size: 16px;
+    text-size-adjust: 100%;
 }
 
 /* Navbar */
@@ -42,6 +44,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .nav-logo {
@@ -57,7 +61,9 @@ body {
 .nav-menu {
     display: flex;
     list-style: none;
-    gap: 2rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .nav-menu a {
@@ -74,13 +80,14 @@ body {
 .container {
     max-width: 1200px;
     margin: 2rem auto;
-    padding: 0 20px;
+    padding: 0 16px;
+    width: min(100%, 1200px);
 }
 
 /* Buttons */
 .btn {
     display: inline-block;
-    padding: 0.75rem 1.5rem;
+    padding: 0.7rem 1.2rem;
     border: none;
     border-radius: var(--border-radius);
     font-size: 1rem;
@@ -385,7 +392,8 @@ body {
 .exam-details {
     padding: 0 1.5rem;
     display: flex;
-    gap: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
     font-size: 0.9rem;
     color: #666;
 }
@@ -393,7 +401,8 @@ body {
 .exam-actions {
     padding: 1.5rem;
     display: flex;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
 }
 
 .exam-actions .btn {
@@ -797,17 +806,44 @@ body {
 }
 
 /* Responsive */
+@media (max-width: 992px) {
+    .hero-content h1 {
+        font-size: 2rem;
+    }
+
+    .statistics,
+    .exams-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 768px) {
+    .nav-container {
+        justify-content: center;
+        padding: 0 12px;
+    }
+
     .nav-menu {
-        flex-direction: column;
-        gap: 1rem;
+        justify-content: center;
+        gap: 0.6rem 1rem;
+    }
+
+    .hero {
+        padding: 2.5rem 1rem;
     }
 
     .hero-content h1 {
         font-size: 1.5rem;
     }
 
-    .features-grid {
+    .hero-content p {
+        font-size: 1rem;
+    }
+
+    .features-grid,
+    .statistics,
+    .exams-grid,
+    .contact-content {
         grid-template-columns: 1fr;
     }
 
@@ -824,15 +860,51 @@ body {
         grid-template-columns: 1fr;
     }
 
-    .contact-content {
-        grid-template-columns: 1fr;
-    }
-
-    .statistics {
-        grid-template-columns: repeat(2, 1fr);
+    .exam-actions,
+    .hero-buttons,
+    .question-nav-buttons,
+    .result-actions {
+        flex-direction: column;
     }
 
     .question-buttons {
-        grid-template-columns: repeat(6, 1fr);
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .results-table {
+        overflow-x: auto;
+    }
+
+    .results-table table {
+        min-width: 560px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 12px;
+    }
+
+    .auth-form,
+    .profile-form,
+    .about-container,
+    .contact-container,
+    .feature-card,
+    .stat-card,
+    .exam-card {
+        padding: 1rem;
+    }
+
+    .exam-header,
+    .card-header {
+        padding: 1rem;
+    }
+
+    .question-buttons {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .nav-logo {
+        font-size: 1.2rem;
     }
 }
