@@ -137,14 +137,14 @@ def exam_mode_home():
 @exam_bp.route('/exam-mode/start', methods=['POST'])
 @login_required
 def exam_mode_start():
-    subjects_config = [('English', 10), ('Mathematics', 10), ('General Paper', 10)]
+    subjects_config = [('English', 14), ('Mathematics', 13), ('General Paper', 13)]
     all_questions = []
     for subject, count in subjects_config:
         questions = Question.query.filter_by(subject=subject).all()
         if questions:
             all_questions.extend(random.sample(questions, min(count, len(questions))))
-    if len(all_questions) > 30:
-        all_questions = random.sample(all_questions, 30)
+    if len(all_questions) > 40:
+        all_questions = random.sample(all_questions, 40)
     if not all_questions:
         return jsonify({'error': 'No questions available'}), 400
     exam = Exam.query.filter_by(title='Full Exam').first()
@@ -157,7 +157,7 @@ def exam_mode_start():
         exam_id=exam.id,
         exam_mode='full_exam',
         selected_subjects='Mathematics,English,General Paper',
-        num_questions_allowed=30,
+        num_questions_allowed=40,
         time_limit_minutes=30,
         passing_score=18,
         started_at=datetime.utcnow()
@@ -235,10 +235,11 @@ def exam_mode_finish(result_id):
     if result.user_id != current_user.id:
         return jsonify({'error': 'Unauthorized'}), 403
     answers = Answer.query.filter_by(result_id=result_id).all()
-    total_score = sum(a.score_obtained for a in answers)
+    correct_count = sum(1 for a in answers if a.is_correct)
+    total_score = round((correct_count / 40) * 30, 2)
     result.completed_at = datetime.utcnow()
     result.total_score = total_score
-    result.percentage = (total_score / 30 * 100)
+    result.percentage = round((total_score / 30) * 100, 1)
     result.is_passed = result.total_score >= result.passing_score
     result.is_graded = True
     result.time_taken_seconds = int((result.completed_at - result.started_at).total_seconds())
